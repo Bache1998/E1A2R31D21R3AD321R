@@ -60,6 +60,23 @@
     wa: document.getElementById("tab-wa"),
     ruleta: document.getElementById("tab-ruleta"),
   };
+  // ========== Mensajería entre secciones ==========
+  // Cuando Ruleta guarda una jugada, avisamos a "Jugadas" para que se refresque al instante (sin reiniciar la app)
+  window.addEventListener("message", function(ev){
+    try{
+      const data = ev && ev.data;
+      if(!data) return;
+
+      const type = (typeof data === "string") ? data : data.type;
+
+      if(type === "jugadas_updated"){
+        if(frames && frames.jugadas && frames.jugadas.contentWindow){
+          frames.jugadas.contentWindow.postMessage({type:"refresh_jugadas"}, "*");
+        }
+      }
+    }catch(e){}
+  });
+
 
   frames.ultimo.srcdoc = `<!DOCTYPE html>
 <html lang="es">
@@ -1979,6 +1996,20 @@ const btnTema = () => safeGet("btn-tema");
     renderizarJugadas();
     bindEvents();
 
+    // Refrescar jugadas cuando otra sección (por ej. Ruleta) las guarda en localStorage
+    window.addEventListener("message", function(ev){
+      try{
+        const data = ev && ev.data;
+        const type = (typeof data === "string") ? data : (data && data.type);
+        if(type === "refresh_jugadas"){
+          cargarJugadas();
+          renderizarJugadas();
+          try{ if (typeof poblarSelectJugadasAnteriores === "function") poblarSelectJugadasAnteriores(); }catch(_e){}
+          try{ if (typeof poblarSelectJugadas === "function") poblarSelectJugadas(); }catch(_e){}
+        }
+      }catch(e){}
+    });
+
     // mostramos pantalla inicial
     mostrarPantalla("pantalla-jugadas");
   }
@@ -2740,7 +2771,7 @@ body{
     </div>
 
     <a class="btn-whatsapp"
-       href="https://wa.me/5493873526462?text=Hola%20quiero%20hacer%20una%20jugada%20me%20pueden%20pasar%20informacion"
+       href="https://wa.me/5493873538411?text=Hola%20quiero%20hacer%20una%20jugada%20me%20pueden%20pasar%20informacion"
        target="_blank" rel="noopener">
        Contactar por WhatsApp
     </a>
@@ -2764,261 +2795,318 @@ body{
   frames.ruleta.srcdoc = `<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ruleta de la Suerte</title>
-  <style>
-    :root{
-      --red:#e53935;
-      --bg:#f2f2f2;
-      --card:#ffffff;
-      --text:#111;
-      --muted:#666;
-      --shadow:0 10px 22px rgba(0,0,0,.10);
-      --radius:16px;
-      --border:#e6e6e6;
-      --chip:#f6f6f6;
-      --overlay: rgba(0,0,0,.50);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color:var(--text);
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ruleta de la Suerte</title>
+<style>
+  :root{
+    --red:#e53935;
+    --bg:#f2f2f2;
+    --card:#ffffff;
+    --text:#111;
+    --muted:#666;
+    --shadow:0 10px 28px rgba(0,0,0,.12);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .wrap{
+    padding:14px 14px 18px;
+    max-width:520px;
+    margin:0 auto;
+  }
+  .card{
+    background:var(--card);
+    border-radius:22px;
+    box-shadow:var(--shadow);
+    padding:14px;
+  }
+  .wheelBox{
+    position:relative;
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 0 6px;
+  }
+  #wheel{
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:
+      conic-gradient(#f3f3f3 0 25deg,#e7e7e7 25deg 50deg,#f3f3f3 50deg 75deg,#e7e7e7 75deg 100deg,
+                     #f3f3f3 100deg 125deg,#e7e7e7 125deg 150deg,#f3f3f3 150deg 175deg,#e7e7e7 175deg 200deg,
+                     #f3f3f3 200deg 225deg,#e7e7e7 225deg 250deg,#f3f3f3 250deg 275deg,#e7e7e7 275deg 300deg,
+                     #f3f3f3 300deg 325deg,#e7e7e7 325deg 350deg,#f3f3f3 350deg 360deg);
+    box-shadow: inset 0 0 0 10px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.14);
+    position:relative;
+    overflow:hidden;
+  }
+  #wheel:before{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:50%;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.08);
+  }
+  .hub{
+    position:absolute;
+    width:72px;height:72px;border-radius:50%;
+    background:rgba(255,255,255,.65);
+    left:50%;top:50%;transform:translate(-50%,-50%);
+    box-shadow: inset 0 0 0 10px rgba(0,0,0,.06);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .hub span{
+    display:inline-block;
+    width:26px;height:26px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff 0, #f4f4f4 40%, #dcdcdc 100%);
+    box-shadow:0 3px 10px rgba(0,0,0,.2);
+  }
+  .pointer{
+    position:absolute;
+    top:2px; left:50%;
+    transform:translateX(-50%);
+    width:0;height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-bottom:22px solid #fff;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));
+  }
+  .spin{
+    animation:spin 1.2s cubic-bezier(.2,.85,.15,1) both;
+  }
+  @keyframes spin{
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(980deg); }
+  }
 
-    .topbar{
-      background: var(--red);
-      color:#fff;
-      padding:12px 12px 14px;
-      text-align:center;
-      position:sticky;
-      top:0;
-      z-index:10;
-      box-shadow: 0 4px 12px rgba(0,0,0,.18);
-    }
-    .topbar h1{
-      margin:0;
-      font-size:24px;
-      font-weight:900;
-      letter-spacing:.2px;
-      line-height:1.1;
-    }
-    .topbar .sub{
-      margin-top:2px;
-      font-size:13px;
-      opacity:.9;
-    }
+  h2{
+    margin:10px 0 10px;
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:.2px;
+  }
+  .balls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:4px 0 10px;
+  }
+  .ball{
+    width:56px;height:56px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff 0, #f3f3f3 45%, #dcdcdc 100%);
+    box-shadow:0 10px 18px rgba(0,0,0,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;
+    font-size:20px;
+    color:#222;
+    opacity:0;
+    transform:translateY(10px) scale(.92);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .ball.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+  .btnRow{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:8px 0 10px;
+  }
+  .btn{
+    border:0;
+    border-radius:14px;
+    padding:12px 16px;
+    font-weight:800;
+    font-size:18px;
+    box-shadow:0 10px 20px rgba(0,0,0,.12);
+    cursor:pointer;
+  }
+  .btn:disabled{ opacity:.55; cursor:not-allowed; }
+  .btnBlack{ background:#000; color:#fff; }
+  .btnGray{ background:#e7e7e7; color:#111; box-shadow:none; }
+  .btnRed{ background:var(--red); color:#fff; }
 
-    .wrap{max-width:760px;margin:0 auto;padding:10px}
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:10px;
-    }
+  .combo{
+    border:2px dashed rgba(0,0,0,.12);
+    border-radius:18px;
+    padding:12px;
+    margin-top:10px;
+  }
+  .comboTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .comboTop h3{
+    margin:0;
+    font-size:22px;
+    font-weight:900;
+  }
+  .toggle{
+    border:1px solid rgba(0,0,0,.15);
+    background:#fff;
+    border-radius:999px;
+    padding:8px 12px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .comboBody{ margin-top:10px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+  .chip{
+    background:#fff;
+    border:1px solid rgba(0,0,0,.14);
+    border-radius:999px;
+    padding:10px 12px;
+    font-weight:900;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 8px 16px rgba(0,0,0,.10);
+  }
+  .chip .x{
+    width:28px;height:28px;border-radius:50%;
+    border:0;
+    background:#e9e9e9;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .msg{
+    margin-top:10px;
+    border-radius:14px;
+    padding:10px 12px;
+    font-size:16px;
+    border:1px solid rgba(0,0,0,.12);
+    color:#222;
+    background:#fff;
+  }
+  .msg.ok{ border-color:#0f9d58; background:#e7f7ee; }
+  .msg.bad{ border-color:#d93025; background:#fde8e6; }
 
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .col{flex:1 1 320px}
+  /* Modal selector */
+  .modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:50;
+  }
+  .modal.show{ display:flex; }
+  .sheet{
+    width:min(560px,100%);
+    background:#fff;
+    border-top-left-radius:18px;
+    border-top-right-radius:18px;
+    box-shadow:0 -16px 40px rgba(0,0,0,.25);
+    padding:12px;
+  }
+  .mTop{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    padding:4px 4px 10px;
+  }
+  .mTop .t{ font-weight:900; font-size:20px; }
+  .mTop .s{ color:#666; margin-top:2px; font-weight:600; }
+  .closeX{
+    border:0;
+    background:transparent;
+    font-size:34px;
+    line-height:1;
+    cursor:pointer;
+    padding:0 6px;
+  }
+  .selBox{
+    background:#f4f4f4;
+    border-radius:14px;
+    padding:10px 12px;
+    font-weight:900;
+    margin:6px 2px 10px;
+    text-align:center;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(6, 1fr);
+    gap:10px;
+    padding:4px 2px 10px;
+  }
+  .cell{
+    border:0;
+    border-radius:14px;
+    height:52px;
+    font-weight:900;
+    font-size:18px;
+    background:#8b8b8b;
+    color:#fff;
+    box-shadow:0 10px 16px rgba(0,0,0,.12);
+    cursor:pointer;
+  }
+  .cell.on{
+    background:var(--red);
+  }
+  .hint{
+    text-align:center;
+    color:#666;
+    font-weight:700;
+    padding:6px 0 10px;
+  }
+  .bigClose{
+    width:100%;
+    border:0;
+    border-radius:14px;
+    padding:14px 16px;
+    background:#000;
+    color:#fff;
+    font-weight:900;
+    font-size:18px;
+    cursor:pointer;
+  }
 
-    /* Ruleta compacta */
-    .wheelArea{display:flex; justify-content:center; align-items:center; padding:4px 0 2px;}
-    .wheelWrap{width:190px;height:190px;position:relative;display:grid;place-items:center;}
-    .pin{
-      position:absolute;top:-6px;left:50%;transform:translateX(-50%);
-      width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:18px solid #fff;
-      filter: drop-shadow(0 6px 8px rgba(0,0,0,.22));z-index:2;
-    }
-    .wheel{
-      width:190px;height:190px;border-radius:50%;
-      background: conic-gradient(
-        rgba(0,0,0,.08) 0 18deg, rgba(0,0,0,.03) 18deg 36deg,
-        rgba(0,0,0,.08) 36deg 54deg, rgba(0,0,0,.03) 54deg 72deg,
-        rgba(0,0,0,.08) 72deg 90deg, rgba(0,0,0,.03) 90deg 108deg,
-        rgba(0,0,0,.08) 108deg 126deg, rgba(0,0,0,.03) 126deg 144deg,
-        rgba(0,0,0,.08) 144deg 162deg, rgba(0,0,0,.03) 162deg 180deg,
-        rgba(0,0,0,.08) 180deg 198deg, rgba(0,0,0,.03) 198deg 216deg,
-        rgba(0,0,0,.08) 216deg 234deg, rgba(0,0,0,.03) 234deg 252deg,
-        rgba(0,0,0,.08) 252deg 270deg, rgba(0,0,0,.03) 270deg 288deg,
-        rgba(0,0,0,.08) 288deg 306deg, rgba(0,0,0,.03) 306deg 324deg,
-        rgba(0,0,0,.08) 324deg 342deg, rgba(0,0,0,.03) 342deg 360deg
-      );
-      border:8px solid rgba(0,0,0,.10);
-      outline: 2px solid rgba(0,0,0,.05);
-      box-shadow: 0 16px 22px rgba(0,0,0,.14);
-      transform: rotate(0deg);
-      transition: transform 1.45s cubic-bezier(.12,.82,.18,1.00);
-    }
-    .hub{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:1;}
-    .hub > div{
-      width:58px;height:58px;border-radius:50%;
-      background: rgba(0,0,0,.08);
-      border:1px solid rgba(0,0,0,.10);
-      display:grid;place-items:center;font-weight:900;
-    }
-
-    /* Números */
-    .sectionTitle{font-weight:900;font-size:18px;margin:6px 0 8px;}
-    .numbers{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0 0;min-height:52px;}
-    .ball{
-      width:46px;height:46px;border-radius:999px;display:grid;place-items:center;
-      font-weight:900;font-size:17px;background: var(--chip);
-      border:1px solid rgba(0,0,0,.10);box-shadow: 0 7px 12px rgba(0,0,0,.10);
-      transform: scale(1);
-    }
-    .pop{ animation: pop .35s ease-out; }
-    @keyframes pop{
-      0%{transform: scale(.5); opacity:.2}
-      70%{transform: scale(1.15); opacity:1}
-      100%{transform: scale(1); opacity:1}
-    }
-
-    /* Botones */
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .btn{
-      border:0;cursor:pointer;border-radius:12px;padding:12px 14px;
-      font-weight:900;font-size:16px;box-shadow: 0 10px 16px rgba(0,0,0,.12);
-    }
-    .btnBlack{background:#000;color:#fff}
-    .btnGray{background:#e9e9e9;color:#111;border:1px solid rgba(0,0,0,.10);box-shadow:none;}
-    .btn:active{transform: scale(.98)}
-    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
-
-    /* Combinar */
-    .comboBox{
-      margin-top:10px;padding:10px;border-radius:16px;background:#fafafa;
-      border:1px dashed rgba(0,0,0,.15);
-    }
-    .comboHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-    .comboHeader .t{font-weight:900;font-size:18px;margin:0;}
-    .toggle{
-      border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;
-      padding:8px 10px;font-weight:900;cursor:pointer;
-    }
-    .toggle:active{transform:scale(.98)}
-    .comboBody{margin-top:10px}
-    .comboBody.hidden{display:none}
-
-    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .chip{
-      display:flex;gap:10px;align-items:center;padding:9px 11px;border-radius:999px;
-      background:#fff;border:1px solid rgba(0,0,0,.12);font-weight:900;
-    }
-    .x{
-      width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
-      background:#f1f1f1;border:1px solid rgba(0,0,0,.10);cursor:pointer;font-size:14px;line-height:1;
-    }
-
-    .msg{
-      margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);
-      background:#fff;color:#444;font-size:13px;min-height:40px;display:flex;align-items:center;
-    }
-    .msg.ok{border-color: rgba(34,197,94,.35)}
-    .msg.bad{border-color: rgba(198,40,40,.35)}
-
-    /* Modal selector */
-    .modal{position:fixed;inset:0;display:none;z-index:999;background: rgba(0,0,0,.50);}
-    .modal.show{display:block;}
-    .modalSheet{position:absolute;inset:0;display:flex;flex-direction:column;background: var(--bg);}
-    .modalTop{
-      background: var(--red);color:#fff;padding:12px 12px 14px;
-      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,.18);
-    }
-    .modalTop .ttl{font-weight:900;font-size:20px;line-height:1.1;margin:0;}
-    .modalTop .sub2{font-size:13px;opacity:.9;margin-top:2px;}
-    .modalTop .closeX{border:0;background:transparent;color:#fff;font-size:28px;font-weight:900;cursor:pointer;line-height:1;padding:0 6px;}
-    .modalBody{padding:12px;flex:1;display:flex;flex-direction:column;gap:10px;}
-    .selBox{
-      background:#fff;border:1px solid var(--border);border-radius:16px;
-      box-shadow: var(--shadow);padding:12px;text-align:center;font-weight:900;
-    }
-    .gridBox{
-      background:#fff;border:1px solid var(--border);border-radius:16px;
-      box-shadow: var(--shadow);padding:12px;flex:1;overflow:auto;
-    }
-    .grid{display:grid;grid-template-columns: repeat(6, 1fr);gap:10px;}
-    .nbtn{
-      height:54px;border-radius:12px;border:0;cursor:pointer;
-      background:#8a8a8a;color:#fff;font-weight:900;font-size:18px;
-      box-shadow: 0 8px 14px rgba(0,0,0,.10);
-    }
-    .nbtn:active{transform:scale(.98)}
-    .nbtn.on{background:#111}
-    .hint{color:#666;text-align:center;font-weight:700;margin-top:6px;}
-    .modalBottom{padding:12px;}
-    .bigClose{
-      width:100%;padding:14px 16px;border-radius:14px;background:#000;color:#fff;border:0;
-      font-weight:900;font-size:18px;box-shadow: 0 12px 18px rgba(0,0,0,.14);cursor:pointer;
-    }
-    .bigClose:active{transform:scale(.99)}
-
-    @media (max-width: 420px){
-      .wrap{padding:8px}
-      .wheelWrap{width:180px;height:180px}
-      .wheel{width:180px;height:180px}
-      .ball{width:44px;height:44px}
-      .btn{padding:12px 12px}
-      .nbtn{height:52px;font-size:17px;}
-    }
-  
-    .btn.btnRed{
-      background: var(--red);
-      color:#fff;
-      border: 1px solid rgba(0,0,0,.08);
-    }
-
-  </style>
+  /* anti-copy */
+  body{ -webkit-user-select:none; user-select:none; }
+</style>
 </head>
-
 <body>
-  <div class="topbar">
-    <h1>Quini 6</h1>
-    <div class="sub">Ruleta de la Suerte</div>
-  </div>
-
   <div class="wrap">
     <div class="card">
-      <div class="row">
-        <div class="col">
-          <div class="wheelArea">
-            <div class="wheelWrap">
-              <div class="pin"></div>
-              <div id="wheel" class="wheel" aria-hidden="true"></div>
-              <div class="hub"><div>🎯</div></div>
-            </div>
-          </div>
+      <div class="wheelBox">
+        <div class="pointer"></div>
+        <div id="wheel">
+          <div class="hub"><span></span></div>
+        </div>
+      </div>
+
+      <h2>Números generados</h2>
+      <div id="balls" class="balls"></div>
+
+      <div class="btnRow">
+        <button id="btnGen" class="btn btnBlack">Generar</button>
+        <button id="btnClear" class="btn btnGray">Limpiar</button>
+        <button id="btnAdd" class="btn btnRed">Agregar Jugada</button>
+      </div>
+
+      <div class="combo">
+        <div class="comboTop">
+          <h3>Combinar (hasta 5)</h3>
+          <button id="btnToggle" class="toggle">Ocultar</button>
         </div>
 
-        <div class="col">
-          <div class="sectionTitle">Números generados</div>
-          <div id="nums" class="numbers" aria-live="polite"></div>
-
-          <div class="btnRow">
-            <button id="btnGen" class="btn btnBlack">Generar</button>
-            <button id="btnClear" class="btn btnGray">Limpiar</button>
-            <button id="btnAddPlay" class="btn btnRed">Agregar Jugada</button>
+        <div id="comboBody" class="comboBody">
+          <div class="btnRow" style="margin-top:6px;">
+            <button id="btnPick" class="btn btnGray" style="box-shadow:none;">Elegir números</button>
+            <button id="btnComb" class="btn btnBlack">Combinar</button>
           </div>
 
-          <div class="comboBox">
-            <div class="comboHeader">
-              <div class="t">Combinar (hasta 5)</div>
-              <button id="btnToggle" class="toggle" type="button">Ocultar</button>
-            </div>
-
-            <div id="comboBody" class="comboBody">
-              <div class="btnRow" style="margin-top:6px;">
-                <button id="btnPick" class="btn btnGray" style="box-shadow:none;">Elegir números</button>
-                <button id="btnComb" class="btn btnBlack">Combinar</button>
-              </div>
-
-              <div id="chips" class="chips"></div>
-              <div id="msg" class="msg">Elegí 1 a 5 números tocando “Elegir números”.</div>
-            </div>
-          </div>
-
+          <div id="chips" class="chips"></div>
+          <div id="msg" class="msg">Elegí 1 a 5 números tocando “Elegir números”.</div>
         </div>
       </div>
     </div>
@@ -3026,472 +3114,310 @@ body{
 
   <!-- Modal selector -->
   <div id="modal" class="modal" aria-hidden="true">
-    <div class="modalSheet">
-      <div class="modalTop">
+    <div class="sheet">
+      <div class="mTop">
         <div>
-          <div class="ttl">Agregar números</div>
-          <div class="sub2">Tocá para marcar / desmarcar</div>
+          <div class="t">Agregar números</div>
+          <div class="s">Tocá para marcar / desmarcar</div>
         </div>
         <button id="modalCloseX" class="closeX" aria-label="Cerrar">×</button>
       </div>
 
-      <div class="modalBody">
-        <div id="selBox" class="selBox">Seleccionados: 0 / 5</div>
+      <div id="selBox" class="selBox">Seleccionados: 0 / 5</div>
 
-        <div class="gridBox">
-          <div id="grid" class="grid"></div>
-          <div class="hint">Cuando elijas 5 números, se cierra solo ✅</div>
-        </div>
-      </div>
+      <div id="grid" class="grid"></div>
+      <div class="hint">Cuando elijas 5 números, se cierra solo ✅</div>
 
-      <div class="modalBottom">
-        <button id="modalClose" class="bigClose">Cerrar</button>
-      </div>
+      <button id="modalClose" class="bigClose">Cerrar</button>
     </div>
   </div>
 
   <script>
-    (function(){
-      "use strict";
+  (function(){
+    "use strict";
 
-      const MIN = 0, MAX = 45, PICK = 6;
-      const MAX_PICK_USER = 5;
+    const MIN=0, MAX=45, PICK=6, MAX_PICK_USER=5;
 
-      // Animación: 1ro rápido, luego cada 2 segundos
-      const FIRST_DELAY_MS = 150;
-      const STEP_DELAY_MS  = 2000;
+    const FIRST_DELAY_MS = 150;
+    const STEP_DELAY_MS  = 2000;
+    const SPIN_DURATION_MS = 1200;
+    const REVEAL_AFTER_MS  = 1050;
 
-      // Cada bolilla sale al final de un giro
-      const SPIN_DURATION_MS = 1200;   // debe ser menor que STEP_DELAY_MS
-      const REVEAL_AFTER_MS  = 1050;   // cuándo aparece el número luego de iniciar el giro
+    const STORAGE_JUGADAS = "quini6_mis_jugadas_v2";
 
-      const wheelEl = document.getElementById("wheel");
-      const numsEl  = document.getElementById("nums");
-      const chipsEl = document.getElementById("chips");
-      const msgEl   = document.getElementById("msg");
+    const wheel   = document.getElementById("wheel");
+    const ballsEl = document.getElementById("balls");
+    const chipsEl = document.getElementById("chips");
+    const msgEl   = document.getElementById("msg");
 
-      const btnGen   = document.getElementById("btnGen");
-      const btnClear = document.getElementById("btnClear");
-      const btnComb  = document.getElementById("btnComb");
-      const btnPick  = document.getElementById("btnPick");
+    const btnGen   = document.getElementById("btnGen");
+    const btnClear = document.getElementById("btnClear");
+    const btnAdd   = document.getElementById("btnAdd");
+    const btnComb  = document.getElementById("btnComb");
+    const btnPick  = document.getElementById("btnPick");
+    const btnToggle = document.getElementById("btnToggle");
+    const comboBody = document.getElementById("comboBody");
 
-      const btnToggle = document.getElementById("btnToggle");
-      const comboBody = document.getElementById("comboBody");
+    const modal = document.getElementById("modal");
+    const gridEl = document.getElementById("grid");
+    const selBox = document.getElementById("selBox");
+    const modalClose = document.getElementById("modalClose");
+    const modalCloseX = document.getElementById("modalCloseX");
 
-      // Modal
-      const modal = document.getElementById("modal");
-      const gridEl = document.getElementById("grid");
-      const selBox = document.getElementById("selBox");
-      const modalClose = document.getElementById("modalClose");
-      const modalCloseX = document.getElementById("modalCloseX");
+    let chosen = [];
+    let lastGenerated = [];
+    let busy = false;
+    let timers = [];
 
-      let chosen = [];
-      let busy = false;
-      let lastGenerated = null;
-      let timers = [];
+    function fmt2(n){ return String(n).padStart(2,"0"); }
 
-      function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-      function uniqSorted(arr){ return Array.from(new Set(arr)).sort((a,b)=>a-b); }
-      function pad2(n){ return String(n).padStart(2,"0"); }
-
-      function setMsg(text, kind){
-        if(!msgEl) return;
-        msgEl.classList.remove("ok","bad");
-        if(kind) msgEl.classList.add(kind);
-        msgEl.textContent = text;
-      }
-
-      function setBusy(v){
-        busy = v;
-        [btnGen, btnClear, btnComb, btnPick, btnToggle, modalClose, modalCloseX].forEach(el=>{
-          if(!el) return;
-          el.disabled = v;
-        });
-      }
-
-      function spinWheel(){
-        const turns = randInt(7, 12) * 360;
-        const extra = randInt(0, 359);
-        wheelEl.style.transform = "rotate(" + (turns + extra) + "deg)";
-      }
-
-      function clearTimers(){
-        for(let i=0;i<timers.length;i++) clearTimeout(timers[i]);
-        timers = [];
-      }
-
-      function loadCountsFromLocalStorage(){
-        const counts = new Array(MAX+1).fill(1);
-        let found = 0;
-
-        const keysToTry = [
-          "quini_historial",
-          "historial_quini6",
-          "historialQuini6",
-          "quini6_historial",
-          "HISTORIAL_QUINI6"
-        ];
-
-        function bump(n){
-          if(Number.isInteger(n) && n>=MIN && n<=MAX){
-            counts[n] += 1;
-            found += 1;
-          }
-        }
-
-        for(let i=0;i<keysToTry.length;i++){
-          const k = keysToTry[i];
-          const raw = localStorage.getItem(k);
-          if(!raw) continue;
-
-          try{
-            const data = JSON.parse(raw);
-
-            if(Array.isArray(data)){
-              data.forEach(item=>{
-                if(Array.isArray(item)) item.forEach(bump);
-                else if(item && Array.isArray(item.numeros)) item.numeros.forEach(bump);
-                else if(item && Array.isArray(item.nums)) item.nums.forEach(bump);
-                else if(item && Array.isArray(item.resultado)) item.resultado.forEach(bump);
-              });
-            }
-
-            if(data && typeof data === "object"){
-              const arr = data.sorteos || data.historial || data.draws || data.data;
-              if(Array.isArray(arr)){
-                arr.forEach(item=>{
-                  if(Array.isArray(item)) item.forEach(bump);
-                  else if(item && Array.isArray(item.numeros)) item.numeros.forEach(bump);
-                  else if(item && Array.isArray(item.nums)) item.nums.forEach(bump);
-                  else if(item && Array.isArray(item.resultado)) item.resultado.forEach(bump);
-                });
-              }
-            }
-          }catch(e){}
-
-          if(found>0) break;
-        }
-
-        return { counts, found };
-      }
-
-      function pickWeighted(excludedSet, weights){
-        let total = 0;
-        for(let n=MIN;n<=MAX;n++){
-          if(excludedSet.has(n)) continue;
-          total += weights[n];
-        }
-        if(total<=0){
-          let n;
-          do{ n = randInt(MIN,MAX); } while(excludedSet.has(n));
-          return n;
-        }
-        let r = Math.random() * total;
-        for(let n=MIN;n<=MAX;n++){
-          if(excludedSet.has(n)) continue;
-          r -= weights[n];
-          if(r <= 0) return n;
-        }
-        let n;
-        do{ n = randInt(MIN,MAX); } while(excludedSet.has(n));
-        return n;
-      }
-
-      function buildHotColdLists(weights){
-        const arr = [];
-        for(let n=MIN;n<=MAX;n++) arr.push({n:n, w: weights[n]});
-        arr.sort((a,b)=>b.w-a.w);
-        const hot = arr.slice(0, 15).map(x=>x.n);
-        const cold = arr.slice(-15).map(x=>x.n);
-        return { hot, cold };
-      }
-
-      function generateNumbers(userChosen){
-        const excluded = new Set(userChosen || []);
-        const loaded = loadCountsFromLocalStorage();
-        const counts = loaded.counts;
-        const found = loaded.found;
-
-        const res = [];
-        const needed = PICK - excluded.size;
-
-        if(needed <= 0){
-          return uniqSorted(Array.from(excluded)).slice(0, PICK);
-        }
-
-        if(found > 0){
-          const lists = buildHotColdLists(counts);
-          const hot = lists.hot;
-          const cold = lists.cold;
-
-          const targetHot = Math.ceil(needed/2);
-          const targetCold = needed - targetHot;
-
-          function pickFromList(list){
-            const tries = 80;
-            for(let i=0;i<tries;i++){
-              const n = list[randInt(0, list.length-1)];
-              if(!excluded.has(n)){
-                excluded.add(n);
-                res.push(n);
-                return true;
-              }
-            }
-            return false;
-          }
-
-          for(let i=0;i<targetHot;i++){
-            if(!pickFromList(hot)){
-              const n = pickWeighted(excluded, counts);
-              excluded.add(n); res.push(n);
-            }
-          }
-          for(let i=0;i<targetCold;i++){
-            if(!pickFromList(cold)){
-              const inv = counts.map(w => 1 / (w || 1));
-              const n = pickWeighted(excluded, inv);
-              excluded.add(n); res.push(n);
-            }
-          }
-        } else {
-          while(res.length < needed){
-            const n = randInt(MIN,MAX);
-            if(!excluded.has(n)){
-              excluded.add(n);
-              res.push(n);
-            }
-          }
-        }
-
-        const final = uniqSorted(Array.from(excluded));
-        return final.slice(0, PICK);
-      }
-
-      // Animación: 1ro rápido, luego cada 2s y la ruleta gira por cada bolilla
-      function revealBalls(arr){
-        clearTimers();
-
-        numsEl.innerHTML = "";
-        const balls = [];
-        for(let i=0;i<PICK;i++){
-          const d = document.createElement("div");
-          d.className="ball";
-          d.textContent="—";
-          numsEl.appendChild(d);
-          balls.push(d);
-        }
-
-        if(!arr || arr.length !== PICK){
-          return;
-        }
-
-        for(let i=0;i<PICK;i++){
-          const baseDelay = FIRST_DELAY_MS + (i * STEP_DELAY_MS);
-
-          // 1) iniciar giro
-          const tSpin = setTimeout(function(){
-            spinWheel();
-          }, baseDelay);
-          timers.push(tSpin);
-
-          // 2) mostrar bolilla al final del giro
-          const tReveal = setTimeout(function(){
-            balls[i].textContent = pad2(arr[i]);
-            balls[i].classList.remove("pop");
-            void balls[i].offsetWidth;
-            balls[i].classList.add("pop");
-          }, baseDelay + REVEAL_AFTER_MS);
-          timers.push(tReveal);
-        }
-
-        const doneDelay = FIRST_DELAY_MS + ((PICK-1) * STEP_DELAY_MS) + REVEAL_AFTER_MS + 250;
-        timers.push(setTimeout(function(){
-          setBusy(false);
-          setMsg("Listo ✅", "ok");
-        }, doneDelay));
-      }
-
-
-      function updateChosenUI(){
-        chipsEl.innerHTML = "";
-        chosen.forEach((n, idx)=>{
-          const c = document.createElement("div");
-          c.className = "chip";
-          c.innerHTML = "<span>" + pad2(n) + "</span>";
-          const x = document.createElement("div");
-          x.className = "x";
-          x.textContent = "×";
-          x.onclick = function(){
-            if(busy) return;
-            chosen.splice(idx,1);
-            chosen = uniqSorted(chosen);
-            updateChosenUI();
-            updateModalUI();
-            setMsg("Elegí 1 a 5 números tocando “Elegir números”.", "");
-          };
-          c.appendChild(x);
-          chipsEl.appendChild(c);
-        });
-      }
-
-      function openModal(){
-        if(busy) return;
-        modal.classList.add("show");
-        modal.setAttribute("aria-hidden","false");
-        updateModalUI();
-      }
-      function closeModal(){
-        modal.classList.remove("show");
-        modal.setAttribute("aria-hidden","true");
-      }
-
-      function updateModalUI(){
-        selBox.textContent = "Seleccionados: " + chosen.length + " / " + MAX_PICK_USER;
-        const btns = gridEl.querySelectorAll("button[data-n]");
-        btns.forEach(b=>{
-          const n = Number(b.getAttribute("data-n"));
-          if(chosen.includes(n)) b.classList.add("on");
-          else b.classList.remove("on");
-        });
-      }
-
-      function togglePick(n){
-        if(busy) return;
-
-        if(!Number.isInteger(n) || n < MIN || n > MAX){
-          setMsg("❌ Solo se permite del 0 al 45.", "bad");
-          return;
-        }
-
-        const exists = chosen.includes(n);
-        if(exists){
-          chosen = chosen.filter(x => x !== n);
-          chosen = uniqSorted(chosen);
-          updateChosenUI();
-          updateModalUI();
-          setMsg(chosen.length ? ("Elegidos: " + chosen.length + ".") : "Elegí 1 a 5 números tocando “Elegir números”.", chosen.length ? "ok" : "");
-          return;
-        }
-
-        if(chosen.length >= MAX_PICK_USER){
-          setMsg("Máximo 5 números. Quitá uno si querés agregar otro.", "bad");
-          return;
-        }
-
-        chosen.push(n);
-        chosen = uniqSorted(chosen);
-        updateChosenUI();
-        updateModalUI();
-        setMsg("Elegidos: " + chosen.length + ".", "ok");
-
-        if(chosen.length === MAX_PICK_USER){
-          setTimeout(function(){ if(!busy) closeModal(); }, 350);
-        }
-      }
-
-      function buildGrid(){
-        gridEl.innerHTML = "";
-        for(let n=MIN; n<=MAX; n++){
-          const b = document.createElement("button");
-          b.className = "nbtn";
-          b.type = "button";
-          b.setAttribute("data-n", String(n));
-          b.textContent = pad2(n);
-          b.addEventListener("click", function(){ togglePick(n); });
-          gridEl.appendChild(b);
-        }
-      }
-
-      function doGenerate(){
-        if(busy) return;
-        setBusy(true);
-        spinWheel();
-        setMsg("Generando bolillas... (cada 2s)", "");
-        const nums = generateNumbers([]);
-        lastGenerated = nums.slice();
-        revealBalls(nums);
-      }
-
-      function doCombine(){
-        if(busy) return;
-
-        if(chosen.length === 0){
-          setMsg("Primero elegí al menos 1 número (0 a 45).", "bad");
-          return;
-        }
-        if(chosen.length > MAX_PICK_USER){
-          setMsg("Máximo 5 números elegidos.", "bad");
-          return;
-        }
-
-        setBusy(true);
-        spinWheel();
-        setMsg("Combinando bolillas... (cada 2s)", "");
-        const nums = generateNumbers(chosen);
-        revealBalls(nums);
-      }
-
-      function doClear(){
-        if(busy) return;
-
-        clearTimers();
-        chosen = [];
-        updateChosenUI();
-        updateModalUI();
-
-        numsEl.innerHTML = "";
-        for(let i=0;i<PICK;i++){
-          const d = document.createElement("div");
-          d.className="ball";
-          d.textContent="—";
-          numsEl.appendChild(d);
-        }
-        setMsg("Elegí 1 a 5 números tocando “Elegir números”.", "");
-      }
-
-      function toggleCombo(){
-        if(busy) return;
-        const hidden = comboBody.classList.toggle("hidden");
-        btnToggle.textContent = hidden ? "Mostrar" : "Ocultar";
-      }
-
-      btnGen.addEventListener("click", doGenerate);
-      btnComb.addEventListener("click", doCombine);
-      btnClear.addEventListener("click", doClear);
-
-      const btnAddPlay = safeGet("btnAddPlay");
-      if(btnAddPlay){
-        btnAddPlay.addEventListener("click", function(){
-          if(busy) return;
-          if(!lastGenerated || !Array.isArray(lastGenerated) || lastGenerated.length !== PICK){
-            setMsg("Primero generá 6 números.", "bad");
-            return;
-          }
-          try{
-            window.parent && window.parent.postMessage({type:"ADD_JUGADA", numbers:lastGenerated}, "*");
-            setMsg("Enviado a Jugadas ✅", "ok");
-          }catch(e){
-            setMsg("No se pudo guardar la jugada.", "bad");
-          }
-        });
-      }
-
-      btnPick.addEventListener("click", openModal);
-      btnToggle.addEventListener("click", toggleCombo);
-
-      modalClose.addEventListener("click", closeModal);
-      modalCloseX.addEventListener("click", closeModal);
-      modal.addEventListener("click", function(e){
-        if(e.target === modal) closeModal();
+    function setBusy(v){
+      busy = v;
+      [btnGen, btnClear, btnAdd, btnComb, btnPick].forEach(b=>{
+        if(!b) return;
+        b.disabled = !!v;
       });
+      if(btnToggle) btnToggle.disabled = !!v;
+    }
 
-      buildGrid();
+    function clearTimers(){
+      timers.forEach(t=>clearTimeout(t));
+      timers = [];
+    }
+
+    function setMsg(txt, cls){
+      msgEl.className = "msg" + (cls ? (" "+cls) : "");
+      msgEl.textContent = txt;
+    }
+
+    function spinOnce(){
+      if(!wheel) return;
+      wheel.classList.remove("spin");
+      void wheel.offsetWidth;
+      wheel.classList.add("spin");
+      timers.push(setTimeout(()=>wheel.classList.remove("spin"), SPIN_DURATION_MS+60));
+    }
+
+    function uniqueRandom(excludeSet){
+      let tries = 0;
+      while(tries < 2000){
+        const n = Math.floor(Math.random()*(MAX-MIN+1))+MIN;
+        if(!excludeSet.has(n)) return n;
+        tries++;
+      }
+      // fallback
+      for(let n=MIN;n<=MAX;n++) if(!excludeSet.has(n)) return n;
+      return MIN;
+    }
+
+    function renderBalls(list, revealCount){
+      ballsEl.innerHTML = "";
+      for(let i=0;i<PICK;i++){
+        const div = document.createElement("div");
+        div.className = "ball" + (i < revealCount ? " show" : "");
+        div.textContent = i < list.length ? fmt2(list[i]) : "";
+        ballsEl.appendChild(div);
+      }
+    }
+
+    function doClear(){
+      clearTimers();
+      chosen = [];
+      lastGenerated = [];
+      renderBalls([], 0);
+      renderChips();
+      setMsg("Elegí 1 a 5 números tocando “Elegir números”.", "");
+      setBusy(false);
+    }
+
+    function generateSequence(){
+      if(busy) return;
       doClear();
-    })();
+      setBusy(true);
+      setMsg("Girando…", "");
+
+      const picked = new Set();
+      const final = [];
+      for(let i=0;i<PICK;i++){
+        const n = uniqueRandom(picked);
+        picked.add(n);
+        final.push(n);
+      }
+
+      // Reveal 1st quickly then every 2s, with spin per ball
+      renderBalls(final, 0);
+      spinOnce();
+      timers.push(setTimeout(()=>{ renderBalls(final, 1); }, REVEAL_AFTER_MS));
+
+      for(let i=1;i<PICK;i++){
+        const t = FIRST_DELAY_MS + i*STEP_DELAY_MS;
+        timers.push(setTimeout(()=>spinOnce(), t));
+        timers.push(setTimeout(()=>renderBalls(final, i+1), t + REVEAL_AFTER_MS));
+      }
+
+      timers.push(setTimeout(()=>{
+        lastGenerated = final.slice();
+        setMsg("Listo ✅ (si te gusta, tocá “Agregar Jugada”).", "ok");
+        setBusy(false);
+      }, FIRST_DELAY_MS + (PICK-1)*STEP_DELAY_MS + REVEAL_AFTER_MS + 60));
+    }
+
+    function guardarJugada(numbers){
+      try{
+        const raw = localStorage.getItem(STORAGE_JUGADAS);
+        const arr = raw ? JSON.parse(raw) : [];
+        const jugadaObj = { nombre: "Jugada " + (arr.length + 1), numeros: numbers.map(fmt2) };
+        arr.push(jugadaObj);
+        localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    function addJugadaFromLast(){
+      if(busy) return;
+      if(!Array.isArray(lastGenerated) || lastGenerated.length !== PICK){
+        setMsg("Primero generá 6 números.", "bad");
+        return;
+      }
+      const ok = guardarJugada(lastGenerated);
+      setMsg(ok ? "Guardada en Jugadas ✅" : "No se pudo guardar la jugada.", ok ? "ok" : "bad");
+      // Avisar a la sección "Jugadas" para que se actualice al instante (sin reiniciar la app)
+      try{ if(ok && window.parent && window.parent!==window){ window.parent.postMessage({type:"jugadas_updated"}, "*"); } }catch(e){}
+    }
+
+    function toggleCombo(){
+      const hidden = comboBody.style.display === "none";
+      comboBody.style.display = hidden ? "" : "none";
+      btnToggle.textContent = hidden ? "Ocultar" : "Mostrar";
+    }
+
+    function openModal(){
+      if(busy) return;
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden","false");
+      refreshGrid();
+    }
+
+    function closeModal(){
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden","true");
+    }
+
+    function refreshGrid(){
+      selBox.textContent = "Seleccionados: " + chosen.length + " / " + MAX_PICK_USER;
+      Array.from(gridEl.children).forEach(btn=>{
+        const n = Number(btn.dataset.n);
+        btn.classList.toggle("on", chosen.includes(n));
+      });
+    }
+
+    function buildGrid(){
+      gridEl.innerHTML = "";
+      for(let n=MIN;n<=MAX;n++){
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "cell";
+        b.textContent = fmt2(n);
+        b.dataset.n = String(n);
+        b.addEventListener("click", ()=>{
+          const idx = chosen.indexOf(n);
+          if(idx >= 0){
+            chosen.splice(idx,1);
+          }else{
+            if(chosen.length >= MAX_PICK_USER) return;
+            chosen.push(n);
+          }
+          renderChips();
+          refreshGrid();
+          if(chosen.length >= MAX_PICK_USER){
+            setTimeout(closeModal, 180);
+          }
+        });
+        gridEl.appendChild(b);
+      }
+    }
+
+    function renderChips(){
+      chipsEl.innerHTML = "";
+      chosen.forEach(n=>{
+        const c = document.createElement("div");
+        c.className = "chip";
+        const t = document.createElement("span");
+        t.textContent = fmt2(n);
+        const x = document.createElement("button");
+        x.type = "button";
+        x.className = "x";
+        x.textContent = "×";
+        x.addEventListener("click", ()=>{
+          chosen = chosen.filter(v=>v!==n);
+          renderChips();
+          refreshGrid();
+        });
+        c.appendChild(t);
+        c.appendChild(x);
+        chipsEl.appendChild(c);
+      });
+      if(chosen.length === 0){
+        setMsg("Elegí 1 a 5 números tocando “Elegir números”.", "");
+      }else{
+        setMsg("Elegidos: " + chosen.length + ". Tocá “Combinar” para completar a 6.", "");
+      }
+    }
+
+    function combinar(){
+      if(busy) return;
+      if(chosen.length < 1){
+        setMsg("Elegí al menos 1 número.", "bad");
+        return;
+      }
+      // completar a 6 sin repetir
+      const picked = new Set(chosen);
+      const final = chosen.slice();
+      while(final.length < PICK){
+        const n = uniqueRandom(picked);
+        picked.add(n);
+        final.push(n);
+      }
+
+      // animación igual que Generar
+      clearTimers();
+      setBusy(true);
+      setMsg("Combinando…", "");
+      renderBalls(final, 0);
+      spinOnce();
+      timers.push(setTimeout(()=>renderBalls(final, 1), REVEAL_AFTER_MS));
+      for(let i=1;i<PICK;i++){
+        const t = FIRST_DELAY_MS + i*STEP_DELAY_MS;
+        timers.push(setTimeout(()=>spinOnce(), t));
+        timers.push(setTimeout(()=>renderBalls(final, i+1), t + REVEAL_AFTER_MS));
+      }
+      timers.push(setTimeout(()=>{
+        lastGenerated = final.slice();
+        setMsg("Combinación lista ✅ (podés guardarla).", "ok");
+        setBusy(false);
+      }, FIRST_DELAY_MS + (PICK-1)*STEP_DELAY_MS + REVEAL_AFTER_MS + 60));
+    }
+
+    // Eventos
+    btnGen.addEventListener("click", generateSequence);
+    btnClear.addEventListener("click", doClear);
+    btnAdd.addEventListener("click", addJugadaFromLast);
+    btnPick.addEventListener("click", openModal);
+    btnComb.addEventListener("click", combinar);
+    btnToggle.addEventListener("click", toggleCombo);
+
+    modalClose.addEventListener("click", closeModal);
+    modalCloseX.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e)=>{ if(e.target === modal) closeModal(); });
+
+    buildGrid();
+    doClear();
+  })();
   <\/script>
 </body>
-</html>
-`;
+</html>`;
 
   const btns = {
     ultimo: document.getElementById("btn-ultimo"),
