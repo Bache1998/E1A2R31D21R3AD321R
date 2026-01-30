@@ -820,6 +820,8 @@
             <div class="section-body" id="detalle-jugada-numeros"></div>
           </div>
 
+          <div id="detalle-ultimo" style="margin-top:12px;"></div>
+
           <div style="margin-top:12px;text-align:center;font-weight:900;color:var(--color-muted);font-size:13px;">
             Para verificar si alguna vez ganaste (4+ aciertos o Pozo Extra), usá “¿Ganaste alguna vez?”.
           </div>
@@ -1282,7 +1284,72 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   // ========= Detalle simple =========
-  function abrirDetalleJugada(indice){
+  
+  
+  function obtenerUltimoSorteo(){
+    try{
+      if(!Array.isArray(HISTORIAL_COMPLETO) || !HISTORIAL_COMPLETO.length) return null;
+      let best = HISTORIAL_COMPLETO[0];
+      for(let i=1;i<HISTORIAL_COMPLETO.length;i++){
+        const s = HISTORIAL_COMPLETO[i];
+        if(Number(s.numeroSorteo) > Number(best.numeroSorteo)) best = s;
+      }
+      return best;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function renderDetalleUltimoSorteo(numerosJugada){
+    const cont = safeGet("detalle-ultimo");
+    if(!cont) return;
+
+    const nums = (numerosJugada || []).map(fmt2);
+    const setNums = new Set(nums);
+
+    const sorteo = obtenerUltimoSorteo();
+    if(!sorteo){
+      cont.innerHTML = '<div class="card" style="margin-top:12px;"><div style="text-align:center;font-weight:900;color:var(--color-muted);">No se pudo cargar el último sorteo.</div></div>';
+      return;
+    }
+
+    const juegos = (sorteo && sorteo.juegos) ? sorteo.juegos : [];
+    let maxAciertos = 0;
+
+    const bloques = juegos.map(function(j){
+      const oficiales = (j.numeros || []).map(fmt2);
+      const aciertos = oficiales.filter(function(n){ return setNums.has(n); }).length;
+      if(aciertos > maxAciertos) maxAciertos = aciertos;
+
+      const bolas = oficiales.map(function(n){
+        const cls = setNums.has(n) ? "ball acierto" : "ball";
+        return '<div class="' + cls + '">' + n + '</div>';
+      }).join("");
+
+      return ''
+        + '<div class="section" style="margin-top:10px;">'
+        +   '<div class="section-header">' + (j.nombre || "") + ' • ' + aciertos + ' aciertos</div>'
+        +   '<div class="section-body">' + bolas + '</div>'
+        + '</div>';
+    }).join("");
+
+    const estado = (maxAciertos >= 4) ? "¡Encontramos coincidencias en el último sorteo!" : "Sin premios en el último sorteo";
+    const fecha = sorteo.fechaTexto ? String(sorteo.fechaTexto) : "";
+    const nro = sorteo.numeroSorteo ? String(sorteo.numeroSorteo) : "";
+
+    cont.innerHTML = ''
+      + '<div class="card" style="margin-top:12px;">'
+      +   '<div style="display:flex;align-items:center;justify-content:space-between;">'
+      +     '<div style="font-weight:900;font-size:15px;">Último sorteo</div>'
+      +     '<div style="font-weight:900;color:var(--color-muted);font-size:13px;">' + fecha + ' • Sorteo ' + nro + '</div>'
+      +   '</div>'
+      +   '<div style="margin-top:10px;text-align:center;font-weight:900;font-size:16px;">' + estado + '</div>'
+      +   '<div style="margin-top:12px;font-size:13px;font-weight:800;">Resultados oficiales</div>'
+      +   bloques
+      + '</div>';
+  }
+
+function abrirDetalleJugada(indice){
     indiceSeleccionado = indice;
     const j = jugadas[indice];
     safeGet("titulo-detalle").textContent = j.nombre;
@@ -1295,6 +1362,10 @@ const btnTema = () => safeGet("btn-tema");
       b.textContent = n;
       contJug.appendChild(b);
     });
+
+
+    // Mostrar último resultado y aciertos en Detalle
+    renderDetalleUltimoSorteo((j.numeros || []).map(fmt2));
 
     mostrarPantalla("pantalla-detalle");
   }
