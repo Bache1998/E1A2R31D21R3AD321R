@@ -1371,7 +1371,7 @@ const btnTema = () => safeGet("btn-tema");
 
       const numeros = document.createElement("div");
       numeros.className = "jugada-numeros";
-      numeros.textContent = ordenarNumeros(j.numeros || []).join(" - ");
+      numeros.textContent = ordenarNumeros(j.numeros || []).join("-");
 
       info.appendChild(titulo);
       info.appendChild(numeros);
@@ -1746,7 +1746,7 @@ function abrirDetalleJugada(indice){
       (jugadas || []).forEach((j, idx) => {
         const opt = document.createElement("option");
         opt.value = String(idx);
-        opt.textContent = \`\${j.nombre || ("Jugada " + (idx+1))} (\${ordenarNumeros(j.numeros||[]).join(" - ")})\`;
+        opt.textContent = \`\${j.nombre || ("Jugada " + (idx+1))} (\${ordenarNumeros(j.numeros||[]).join("-")})\`;
         selectJugadaUltimos.appendChild(opt);
       });
 
@@ -1966,7 +1966,7 @@ function abrirDetalleJugada(indice){
         row.innerHTML =
           '<div class="jugada-info">' +
             '<div class="jugada-titulo">' + j.nombre + '</div>' +
-            '<div class="jugada-numeros">' + ordenarNumeros(j.numeros || []).join(" - ") + '</div>' +
+            '<div class="jugada-numeros">' + ordenarNumeros(j.numeros || []).join("-") + '</div>' +
           '</div>';
         row.addEventListener("click", () => {
           renderGanasteResultado("Verificando: " + j.nombre, j.numeros || []);
