@@ -649,8 +649,8 @@ const contPE = document.getElementById("detalle-pozoextra");
     }
     body.dark .jugada-item{background:#202020;border-color:#444;box-shadow:0 2px 6px rgba(0,0,0,.9);}
     .jugada-info{display:flex;flex-direction:column;gap:4px;}
-    .jugada-titulo{font-weight:800;color:#222;}
-    .jugada-numeros{font-size:14px;color:#555;font-weight:700;}
+    .jugada-titulo{font-weight:700;font-size:13px;color:#222;}
+    .jugada-numeros{font-size:17px;font-weight:900;color:#111;letter-spacing:1px;}
     body.dark .jugada-titulo{color:#fff!important;}
     body.dark .jugada-numeros{color:#ddd!important;}
     .btn-edit,.btn-delete{background:none;border:none;font-size:20px;cursor:pointer;margin-left:6px;}
@@ -1130,6 +1130,14 @@ const contPE = document.getElementById("detalle-pozoextra");
   // ========= Utilidades =========
   function fmt2(n){ return String(parseInt(n,10)).padStart(2,"0"); }
 
+  function obtenerFechaHoy(){
+    const d = new Date();
+    const dia = String(d.getDate()).padStart(2,"0");
+    const mes = String(d.getMonth()+1).padStart(2,"0");
+    const anio = d.getFullYear();
+    return dia + "-" + mes + "-" + anio;
+  }
+
   function ordenarNumeros(arr){
     try{
       return (arr || []).slice().map(function(n){
@@ -1232,11 +1240,17 @@ const btnTema = () => safeGet("btn-tema");
       const raw = safeLSGet(STORAGE_JUGADAS);
       const parsed = raw ? JSON.parse(raw) : [];
       jugadas = (parsed || []).map((item, idx) => {
-        if (Array.isArray(item)) return { nombre: "Jugada " + (idx+1), numeros: ordenarNumeros(item) };
-        if (item && Array.isArray(item.numeros)) {
-          return { nombre: item.nombre || ("Jugada " + (idx+1)), numeros: ordenarNumeros(item.numeros || []) };
+        if (Array.isArray(item)) {
+          return { nombre: "Jugada " + (idx+1), numeros: ordenarNumeros(item), fecha: "" };
         }
-        return { nombre: "Jugada " + (idx+1), numeros: [] };
+        if (item && Array.isArray(item.numeros)) {
+          return {
+            nombre: item.nombre || ("Jugada " + (idx+1)),
+            numeros: ordenarNumeros(item.numeros || []),
+            fecha: item.fecha || ""
+          };
+        }
+        return { nombre: "Jugada " + (idx+1), numeros: [], fecha: "" };
       });
     } catch(e) {
       jugadas = [];
@@ -1329,7 +1343,7 @@ const btnTema = () => safeGet("btn-tema");
 
       const titulo = document.createElement("div");
       titulo.className = "jugada-titulo";
-      titulo.textContent = j.nombre;
+      titulo.textContent = j.nombre + (j.fecha ? " (" + j.fecha + ")" : "");
 
       const numeros = document.createElement("div");
       numeros.className = "jugada-numeros";
@@ -1897,7 +1911,7 @@ function abrirDetalleJugada(indice){
         title: "Agregar jugada",
         initial: [],
         onDone: (nums) => {
-          jugadas.push({ nombre: "Jugada " + (jugadas.length + 1), numeros: nums.map(fmt2) });
+          jugadas.push({ nombre: "Jugada " + (jugadas.length + 1), numeros: nums.map(fmt2), fecha: obtenerFechaHoy() });
           guardarJugadas();
           renderizarJugadas();
         }
@@ -2657,6 +2671,14 @@ body{
 
     const STORAGE_JUGADAS = "quini6_mis_jugadas_v2";
 
+    function obtenerFechaHoy(){
+      const d = new Date();
+      const dia = String(d.getDate()).padStart(2,"0");
+      const mes = String(d.getMonth()+1).padStart(2,"0");
+      const anio = d.getFullYear();
+      return dia + "-" + mes + "-" + anio;
+    }
+
     const wheel   = document.getElementById("wheel");
     const ballsEl = document.getElementById("balls");
     const chipsEl = document.getElementById("chips");
@@ -2796,7 +2818,7 @@ body{
           return "duplicate";
         }
 
-        const jugadaObj = { nombre: "Jugada " + ((arr || []).length + 1), numeros: normalized };
+        const jugadaObj = { nombre: "Jugada " + ((arr || []).length + 1), numeros: normalized, fecha: obtenerFechaHoy() };
         (arr || []).push(jugadaObj);
         localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
 
@@ -3016,7 +3038,7 @@ btns.wa.addEventListener("click", ()=>setActive("wa"));
         const raw = localStorage.getItem(STORAGE_JUGADAS);
         const parsed = raw ? JSON.parse(raw) : [];
         const arr = Array.isArray(parsed) ? parsed : [];
-        arr.push({ nombre: "Jugada " + (arr.length+1), numeros: norm });
+        arr.push({ nombre: "Jugada " + (arr.length+1), numeros: norm, fecha: obtenerFechaHoy() });
         localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
         showToast("Jugada guardada ✅");
         setActive("jugadas");
