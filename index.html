@@ -657,6 +657,45 @@ const contPE = document.getElementById("detalle-pozoextra");
     .btn-edit{color:#1976d2;}
     .btn-delete{color:var(--color-danger);}
 
+    .jugada-actions{display:flex;align-items:center;gap:8px;}
+    .jugada-detalles-text{
+      font-size:14px;
+      font-weight:800;
+      color:#111;
+      margin-right:6px;
+      white-space:nowrap;
+    }
+    .jugada-ganadora{
+      background:#19f219 !important;
+      border-color:#11c711 !important;
+    }
+    .jugada-perdedora{
+      background:#ff4b3e !important;
+      border-color:#ef3f31 !important;
+    }
+    .jugada-ganadora .jugada-titulo,
+    .jugada-ganadora .jugada-numeros,
+    .jugada-ganadora .jugada-detalles-text,
+    .jugada-perdedora .jugada-titulo,
+    .jugada-perdedora .jugada-numeros,
+    .jugada-perdedora .jugada-detalles-text{
+      color:#111 !important;
+    }
+
+    /* FORZAR NEGRO TAMBIÉN EN MODO OSCURO */
+    body.dark .jugada-ganadora .jugada-titulo,
+    body.dark .jugada-ganadora .jugada-numeros,
+    body.dark .jugada-ganadora .jugada-detalles-text,
+    body.dark .jugada-perdedora .jugada-titulo,
+    body.dark .jugada-perdedora .jugada-numeros,
+    body.dark .jugada-perdedora .jugada-detalles-text{
+      color:#111 !important;
+    }
+    .jugada-ganadora .btn-edit{color:#1565c0;}
+    .jugada-ganadora .btn-delete{color:#c62828;}
+    .jugada-perdedora .btn-edit{color:#bfe0ff;}
+    .jugada-perdedora .btn-delete{color:#fff;}
+
     .btn-add{
       width:100%;padding:12px;background:#000;color:#fff;font-weight:700;border:none;border-radius:12px;
       margin-top:10px;cursor:pointer;font-size:15px;
@@ -1091,6 +1130,18 @@ const contPE = document.getElementById("detalle-pozoextra");
   // ========= Utilidades =========
   function fmt2(n){ return String(parseInt(n,10)).padStart(2,"0"); }
 
+  function ordenarNumeros(arr){
+    try{
+      return (arr || []).slice().map(function(n){
+        return fmt2(n);
+      }).sort(function(a,b){
+        return parseInt(a,10) - parseInt(b,10);
+      });
+    }catch(e){
+      return arr || [];
+    }
+  }
+
   function safeGet(id){ return document.getElementById(id); }
 
   function safeLSGet(key){
@@ -1181,9 +1232,9 @@ const btnTema = () => safeGet("btn-tema");
       const raw = safeLSGet(STORAGE_JUGADAS);
       const parsed = raw ? JSON.parse(raw) : [];
       jugadas = (parsed || []).map((item, idx) => {
-        if (Array.isArray(item)) return { nombre: "Jugada " + (idx+1), numeros: item.map(fmt2) };
+        if (Array.isArray(item)) return { nombre: "Jugada " + (idx+1), numeros: ordenarNumeros(item) };
         if (item && Array.isArray(item.numeros)) {
-          return { nombre: item.nombre || ("Jugada " + (idx+1)), numeros: (item.numeros || []).map(fmt2) };
+          return { nombre: item.nombre || ("Jugada " + (idx+1)), numeros: ordenarNumeros(item.numeros || []) };
         }
         return { nombre: "Jugada " + (idx+1), numeros: [] };
       });
@@ -1213,6 +1264,51 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   // ========= Render jugadas =========
+  function calcularEstadoJugadaUltimoSorteo(numerosJugada){
+    try{
+      const nums = (numerosJugada || []).map(fmt2);
+      const setNums = new Set(nums);
+      const sorteo = obtenerUltimoSorteo();
+      if(!sorteo) return { ganadora:false, maxAciertos:0, pozoExtra:false };
+
+      const juegos = Array.isArray(sorteo.juegos) ? sorteo.juegos : [];
+      let maxAciertos = 0;
+      let ganadora = false;
+
+      juegos.forEach(function(j){
+        const oficiales = (j.numeros || []).map(fmt2);
+        const aciertos = oficiales.filter(function(n){ return setNums.has(n); }).length;
+        if(aciertos > maxAciertos) maxAciertos = aciertos;
+
+        const nombre = String(j.nombre || "").toLowerCase();
+        if(nombre.includes("siempre sale")){
+          if(aciertos >= 5) ganadora = true;
+        }else if(nombre.includes("revancha")){
+          if(aciertos >= 6) ganadora = true;
+        }else{
+          if(aciertos >= 4) ganadora = true;
+        }
+      });
+
+      const numsExtra = [];
+      for(let i=0;i<3 && i<juegos.length;i++){
+        (juegos[i].numeros || []).forEach(function(n){ numsExtra.push(fmt2(n)); });
+      }
+      const aciertosPozoExtra = numsExtra.filter(function(n){ return setNums.has(n); }).length;
+      const pozoExtra = aciertosPozoExtra >= 6;
+
+      if(pozoExtra) ganadora = true;
+
+      return {
+        ganadora: ganadora,
+        maxAciertos: maxAciertos,
+        pozoExtra: pozoExtra
+      };
+    }catch(e){
+      return { ganadora:false, maxAciertos:0, pozoExtra:false };
+    }
+  }
+
   function renderizarJugadas(){
     const lista = safeGet("lista-jugadas");
     lista.innerHTML = "";
@@ -1223,8 +1319,10 @@ const btnTema = () => safeGet("btn-tema");
     }
 
     jugadas.forEach((j, i) => {
+      const estado = calcularEstadoJugadaUltimoSorteo(j.numeros || []);
+
       const item = document.createElement("div");
-      item.className = "jugada-item";
+      item.className = "jugada-item " + (estado.ganadora ? "jugada-ganadora" : "jugada-perdedora");
 
       const info = document.createElement("div");
       info.className = "jugada-info";
@@ -1235,12 +1333,17 @@ const btnTema = () => safeGet("btn-tema");
 
       const numeros = document.createElement("div");
       numeros.className = "jugada-numeros";
-      numeros.textContent = (j.numeros || []).join(" - ");
+      numeros.textContent = ordenarNumeros(j.numeros || []).join(" - ");
 
       info.appendChild(titulo);
       info.appendChild(numeros);
 
       const contBtns = document.createElement("div");
+      contBtns.className = "jugada-actions";
+
+      const detalles = document.createElement("div");
+      detalles.className = "jugada-detalles-text";
+      detalles.textContent = "Detalles";
 
       const btnEdit = document.createElement("button");
       btnEdit.className = "btn-edit";
@@ -1260,6 +1363,7 @@ const btnTema = () => safeGet("btn-tema");
         preguntarEliminarJugada(i);
       });
 
+      contBtns.appendChild(detalles);
       contBtns.appendChild(btnEdit);
       contBtns.appendChild(btnDel);
 
@@ -1303,12 +1407,11 @@ const btnTema = () => safeGet("btn-tema");
     }
 
     const juegos = (sorteo && sorteo.juegos) ? sorteo.juegos : [];
-    let maxAciertos = 0;
+    const estadoCalc = calcularEstadoJugadaUltimoSorteo(nums);
 
     const bloques = juegos.map(function(j){
       const oficiales = (j.numeros || []).map(fmt2);
       const aciertos = oficiales.filter(function(n){ return setNums.has(n); }).length;
-      if(aciertos > maxAciertos) maxAciertos = aciertos;
 
       const bolas = oficiales.map(function(n){
         const cls = setNums.has(n) ? "ball acierto" : "ball";
@@ -1322,7 +1425,10 @@ const btnTema = () => safeGet("btn-tema");
         + '</div>';
     }).join("");
 
-    const estado = (maxAciertos >= 4) ? "¡Encontramos coincidencias en el último sorteo!" : "Sin premios en el último sorteo";
+    const estado = estadoCalc.ganadora
+      ? "Jugada con premio en el último sorteo"
+      : "Sin premios en el último sorteo";
+
     const fecha = sorteo.fechaTexto ? String(sorteo.fechaTexto) : "";
     const nro = sorteo.numeroSorteo ? String(sorteo.numeroSorteo) : "";
 
@@ -1345,7 +1451,7 @@ function abrirDetalleJugada(indice){
 
     const contJug = safeGet("detalle-jugada-numeros");
     contJug.innerHTML = "";
-    (j.numeros || []).forEach((n) => {
+    ordenarNumeros(j.numeros || []).forEach((n) => {
       const b = document.createElement("div");
       b.className = "ball";
       b.textContent = n;
@@ -1453,7 +1559,7 @@ function abrirDetalleJugada(indice){
     indiceSeleccionado = indice;
     const j = jugadas[indice];
     inputNombreEditar().value = j.nombre || "";
-    editarNumerosTemp = (j.numeros || []).slice();
+    editarNumerosTemp = ordenarNumeros(j.numeros || []);
     renderPreviewEditar();
     errorEditar().textContent = "";
     modalEditar().style.display = "flex";
@@ -1478,7 +1584,7 @@ function abrirDetalleJugada(indice){
     }
 
     j.nombre = nuevoNombre;
-    j.numeros = editarNumerosTemp.slice();
+    j.numeros = ordenarNumeros(editarNumerosTemp);
     guardarJugadas();
     renderizarJugadas();
     cerrarModalEditar();
@@ -1602,14 +1708,14 @@ function abrirDetalleJugada(indice){
       (jugadas || []).forEach((j, idx) => {
         const opt = document.createElement("option");
         opt.value = String(idx);
-        opt.textContent = \`\${j.nombre || ("Jugada " + (idx+1))} (\${(j.numeros||[]).join(" - ")})\`;
+        opt.textContent = \`\${j.nombre || ("Jugada " + (idx+1))} (\${ordenarNumeros(j.numeros||[]).join(" - ")})\`;
         selectJugadaUltimos.appendChild(opt);
       });
 
       // Si veníamos comparando una jugada guardada, intentar mantenerla seleccionada
       if(ultimosModo === "jugada" && Array.isArray(ultimosNumsElegidos) && ultimosNumsElegidos.length){
         const key = ultimosNumsElegidos.join(",");
-        const found = (jugadas || []).findIndex(j => (j.numeros||[]).join(",") === key);
+        const found = (jugadas || []).findIndex(j => ordenarNumeros(j.numeros||[]).join(",") === key);
         selectJugadaUltimos.value = found >= 0 ? String(found) : "";
       } else {
         selectJugadaUltimos.value = "";
@@ -1822,7 +1928,7 @@ function abrirDetalleJugada(indice){
         row.innerHTML =
           '<div class="jugada-info">' +
             '<div class="jugada-titulo">' + j.nombre + '</div>' +
-            '<div class="jugada-numeros">' + (j.numeros || []).join(" - ") + '</div>' +
+            '<div class="jugada-numeros">' + ordenarNumeros(j.numeros || []).join(" - ") + '</div>' +
           '</div>';
         row.addEventListener("click", () => {
           renderGanasteResultado("Verificando: " + j.nombre, j.numeros || []);
