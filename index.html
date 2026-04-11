@@ -1302,12 +1302,27 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   // ========= Render jugadas =========
+  function obtenerAciertosPremiadosDeJuego(juego, fallback){
+    try{
+      const lista = (juego && Array.isArray(juego.ganadores)) ? juego.ganadores : [];
+      const premiados = [];
+      lista.forEach(function(g){
+        const raw = String((g && g.aciertos) || "").replace(/[^\d]/g, "").trim();
+        if(raw) premiados.push(parseInt(raw,10));
+      });
+      if(!premiados.length && typeof fallback === "number") premiados.push(fallback);
+      return premiados;
+    }catch(e){
+      return (typeof fallback === "number") ? [fallback] : [];
+    }
+  }
+
   function calcularEstadoJugadaUltimoSorteo(numerosJugada){
     try{
       const nums = (numerosJugada || []).map(fmt2);
       const setNums = new Set(nums);
       const sorteo = obtenerUltimoSorteo();
-      if(!sorteo) return { ganadora:false, maxAciertos:0, pozoExtra:false };
+      if(!sorteo) return { ganadora:false, maxAciertos:0, pozoExtra:false, aciertosPozoExtra:0 };
 
       const juegos = Array.isArray(sorteo.juegos) ? sorteo.juegos : [];
       let maxAciertos = 0;
@@ -1319,31 +1334,41 @@ const btnTema = () => safeGet("btn-tema");
         if(aciertos > maxAciertos) maxAciertos = aciertos;
 
         const nombre = String(j.nombre || "").toLowerCase();
-        if(nombre.includes("siempre sale")){
-          if(aciertos >= 5) ganadora = true;
-        }else if(nombre.includes("revancha")){
-          if(aciertos >= 6) ganadora = true;
-        }else{
-          if(aciertos >= 4) ganadora = true;
+        let fallback = null;
+        if(nombre.includes("tradicional")) fallback = 4;
+        else if(nombre.includes("revancha")) fallback = 6;
+        else if(nombre.includes("siempre sale")) fallback = 5;
+
+        const premiados = obtenerAciertosPremiadosDeJuego(j, fallback);
+        if(premiados.indexOf(aciertos) !== -1){
+          ganadora = true;
         }
       });
 
-      const numsExtra = [];
+      const setExtra = new Set();
       for(let i=0;i<3 && i<juegos.length;i++){
-        (juegos[i].numeros || []).forEach(function(n){ numsExtra.push(fmt2(n)); });
+        (juegos[i].numeros || []).forEach(function(n){ setExtra.add(fmt2(n)); });
       }
-      const aciertosPozoExtra = numsExtra.filter(function(n){ return setNums.has(n); }).length;
-      const pozoExtra = aciertosPozoExtra >= 6;
+      let aciertosPozoExtra = 0;
+      setExtra.forEach(function(n){
+        if(setNums.has(n)) aciertosPozoExtra++;
+      });
 
-      if(pozoExtra) ganadora = true;
+      let pozoExtra = false;
+      const premiadosPozoExtra = obtenerAciertosPremiadosDeJuego(sorteo.pozoExtra || {}, 6);
+      if(premiadosPozoExtra.indexOf(aciertosPozoExtra) !== -1){
+        pozoExtra = true;
+        ganadora = true;
+      }
 
       return {
         ganadora: ganadora,
         maxAciertos: maxAciertos,
-        pozoExtra: pozoExtra
+        pozoExtra: pozoExtra,
+        aciertosPozoExtra: aciertosPozoExtra
       };
     }catch(e){
-      return { ganadora:false, maxAciertos:0, pozoExtra:false };
+      return { ganadora:false, maxAciertos:0, pozoExtra:false, aciertosPozoExtra:0 };
     }
   }
 
@@ -1463,6 +1488,22 @@ const btnTema = () => safeGet("btn-tema");
         + '</div>';
     }).join("");
 
+    const setExtra = new Set();
+    for(let i=0;i<3 && i<juegos.length;i++){
+      (juegos[i].numeros || []).forEach(function(n){ setExtra.add(fmt2(n)); });
+    }
+    const oficialesExtra = Array.from(setExtra);
+    const bolasExtra = oficialesExtra.map(function(n){
+      const cls = setNums.has(n) ? "ball acierto" : "ball";
+      return '<div class="' + cls + '">' + n + '</div>';
+    }).join("");
+
+    const bloquePozoExtra = ''
+      + '<div class="section" style="margin-top:10px;">'
+      +   '<div class="section-header">POZO EXTRA • ' + (estadoCalc.aciertosPozoExtra || 0) + ' aciertos</div>'
+      +   '<div class="section-body">' + bolasExtra + '</div>'
+      + '</div>';
+
     const estado = estadoCalc.ganadora
       ? "Jugada con premio en el último sorteo"
       : "Sin premios en el último sorteo";
@@ -1479,6 +1520,7 @@ const btnTema = () => safeGet("btn-tema");
       +   '<div style="margin-top:10px;text-align:center;font-weight:900;font-size:16px;">' + estado + '</div>'
       +   '<div style="margin-top:12px;font-size:13px;font-weight:800;">Resultados oficiales</div>'
       +   bloques
+      +   bloquePozoExtra
       + '</div>';
   }
 
@@ -1694,22 +1736,27 @@ function abrirDetalleJugada(indice){
       s.juegos.forEach(j => {
         let ac = 0;
         nums.forEach(n => { if (j.set.has(n)) ac++; });
-        if (ac >= 4) {
+
+        const nombre = String(j.nombre || "").toLowerCase();
+        let gana = false;
+        if (nombre.includes("revancha")) {
+          gana = (ac === 6);
+        } else if (nombre.includes("siempre sale")) {
+          gana = (ac >= 5);
+        } else {
+          gana = (ac >= 4);
+        }
+
+        if (gana) {
           hits.push({ sorteo:s.numeroSorteo, fecha:s.fechaTexto, juego:j.nombre, aciertos:ac });
         }
       });
 
-      // Pozo extra: usando set18 (T1+T2+Revancha) sin 6 en un juego individual
-      const aciertosInd = s.juegos.slice(0,3).map(j => {
-        let a=0; nums.forEach(n => { if (j.set.has(n)) a++; }); return a;
-      });
-      const tiene6 = aciertosInd.some(a => a===6);
-      if (!tiene6) {
-        let ac18 = 0;
-        s.set18.forEach(n => { if (nums.indexOf(n) !== -1) ac18++; });
-        if (ac18 === 6) {
-          hits.push({ sorteo:s.numeroSorteo, fecha:s.fechaTexto, juego:"Pozo Extra", aciertos:6 });
-        }
+      // Pozo extra: números únicos de T1+T2+Revancha
+      let ac18 = 0;
+      s.set18.forEach(n => { if (nums.indexOf(n) !== -1) ac18++; });
+      if (ac18 === 6) {
+        hits.push({ sorteo:s.numeroSorteo, fecha:s.fechaTexto, juego:"Pozo Extra", aciertos:6 });
       }
     });
 
