@@ -650,9 +650,25 @@ const contPE = document.getElementById("detalle-pozoextra");
     body.dark .jugada-item{background:#202020;border-color:#444;box-shadow:0 2px 6px rgba(0,0,0,.9);}
     .jugada-info{display:flex;flex-direction:column;gap:4px;}
     .jugada-titulo{font-weight:700;font-size:13px;color:#222;}
-    .jugada-numeros{font-size:17px;font-weight:900;color:#111;letter-spacing:1px;}
+    .jugada-numeros{
+  font-size:clamp(14px, 4vw, 18px); /* responsive */
+  font-weight:900;
+  color:#111;
+  letter-spacing:1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
     body.dark .jugada-titulo{color:#fff!important;}
-    body.dark .jugada-numeros{color:#ddd!important;}
+    body.dark .jugada-numeros{
+  font-size:clamp(14px, 4vw, 18px); /* responsive */
+  font-weight:900;
+  color:#111;
+  letter-spacing:1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
     .btn-edit,.btn-delete{background:none;border:none;font-size:20px;cursor:pointer;margin-left:6px;}
     .btn-edit{color:#1976d2;}
     .btn-delete{color:var(--color-danger);}
@@ -801,7 +817,15 @@ const contPE = document.getElementById("detalle-pozoextra");
 
     /* Modal Elegir sorteo: más compacto + scroll */
     #modal-sorteos .jugada-item{padding:8px;margin-bottom:8px;font-size:14px;}
-    #modal-sorteos .jugada-numeros{font-size:13px;}
+    #modal-sorteos .jugada-numeros{
+  font-size:clamp(14px, 4vw, 18px); /* responsive */
+  font-weight:900;
+  color:#111;
+  letter-spacing:1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
     #modal-sorteos .modal{max-height:80vh;}
 
     /* Pantallas */
