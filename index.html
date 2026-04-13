@@ -1739,13 +1739,8 @@ function abrirDetalleJugada(indice){
 
         const nombre = String(j.nombre || "").toLowerCase();
         let gana = false;
-        if (nombre.includes("revancha")) {
-          gana = (ac === 6);
-        } else if (nombre.includes("siempre sale")) {
-          gana = (ac >= 5);
-        } else {
-          gana = (ac >= 4);
-        }
+        // Modo análisis: mostrar coincidencias desde 4 aciertos en todos los juegos
+        gana = (ac >= 4);
 
         if (gana) {
           hits.push({ sorteo:s.numeroSorteo, fecha:s.fechaTexto, juego:j.nombre, aciertos:ac });
