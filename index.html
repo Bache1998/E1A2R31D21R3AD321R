@@ -366,7 +366,6 @@
     const STORAGE_TEMA = "quini6_tema";
 
     // Datos del último sorteo (Sorteo 3364 - 12/04/2026)
-    // Fuente: quini-6-resultados.com.ar (detalle de ganadores) - ver el enlace en el proyecto
     const DATOS={"fechaTexto": "Domingo 12/04/2026", "numeroSorteo": "3364", "pozoAcumuladoTexto": "$5.650.000.000", "juegos": [{"clave": "TRADICIONAL", "nombre": "Tradicional Primer Sorteo", "numeros": ["01","14","33","38","41","44"], "ganadores": [{"aciertos":"6","ganadores":"Vacante*","premio":"$ 2.140.891.376,40"},{"aciertos":"5","ganadores":"15","premio":"$ 2.840.995,80"},{"aciertos":"4","ganadores":"1079","premio":"$ 11.848,45"}]},{"clave":"SEGUNDA","nombre":"Tradicional La Segunda del Quini","numeros":["03","08","17","18","32","42"],"ganadores":[{"aciertos":"6","ganadores":"3","premio":"$ 713.630.458,80"},{"aciertos":"5","ganadores":"112","premio":"$ 380.490,51"},{"aciertos":"4","ganadores":"4768","premio":"$ 3.000,00"}]},{"clave":"REVANCHA","nombre":"Revancha","numeros":["13","19","22","25","40","41"],"ganadores":[{"aciertos":"6","ganadores":"Vacante*","premio":"$ 1.608.013.134,00"}]},{"clave":"SIEMPRE_SALE","nombre":"Siempre Sale","numeros":["05","08","14","22","26","36"],"ganadores":[{"aciertos":"5","ganadores":"119","premio":"$ 3.212.905,16"}]}],"pozoExtra":{"titulo":"Premio Extra","numeros":["01","03","08","13","14","17","18","19","22","25","32","33","38","40","41","41","42","44"],"ganadores":[{"aciertos":"6","ganadores":"4008","premio":"$ 38.672,65","pozo":"$ 155.000.000,00"}]},"nota":"*El pozo se acumula para el primer premio del concurso siguiente según artículo 23° del reglamento"};
 
     function aplicarTema(tema){
@@ -490,11 +489,11 @@
 
       // Pozo Extra: se arma con los 18 números (T1 + T2 + Revancha) en el orden oficial (incluye repetidos)
       const numsExtra = [];
-      for(let i=0;i<3 && i<DATOS.juegos.length;i++){
-
+      for(let i=0; i<3 && i<DATOS.juegos.length; i++){
         (DATOS.juegos[i].numeros || []).forEach(n => numsExtra.push(n));
       }
-const contPE = document.getElementById("detalle-pozoextra");
+
+      const contPE = document.getElementById("detalle-pozoextra");
       contPE.innerHTML = "";
 
       const secPE = document.createElement("div");
@@ -660,15 +659,6 @@ const contPE = document.getElementById("detalle-pozoextra");
   text-overflow: ellipsis;
 }
     body.dark .jugada-titulo{color:#fff!important;}
-    body.dark .jugada-numeros{
-  font-size:clamp(14px, 4vw, 18px); /* responsive */
-  font-weight:900;
-  color:#111;
-  letter-spacing:1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
     .btn-edit,.btn-delete{background:none;border:none;font-size:20px;cursor:pointer;margin-left:6px;}
     .btn-edit{color:#1976d2;}
     .btn-delete{color:var(--color-danger);}
@@ -902,7 +892,7 @@ const contPE = document.getElementById("detalle-pozoextra");
           <button class="btn-add" id="btn-verificar-mis-jugadas" style="margin-top:12px;">Verificar tus jugadas</button>
           <button class="btn-add" id="btn-elegir-numeros-verificar">Elegir números para verificar</button>
 
-          
+
           <div id="ganaste-numeros-elegidos" class="section-body" style="margin-top:12px;"></div>
           <button class="btn-secondary-full" id="btn-ganaste-agregar-a-mis" style="display:none;margin-top:10px;">Agregar a Mis jugadas</button>
 <div style="margin-top:12px;">
@@ -912,7 +902,7 @@ const contPE = document.getElementById("detalle-pozoextra");
           </div>
         </section>
       </section>
-    
+
       <!-- PANTALLA: ÚLTIMOS SORTEOS -->
       <section id="pantalla-ultimos" class="oculta">
         <section class="card">
@@ -937,7 +927,7 @@ const contPE = document.getElementById("detalle-pozoextra");
             <div id="ultimos-numeros-elegidos" class="section-body" style="margin-top:10px;"></div>
           </div>
 
-          
+
           <div style="margin-top:14px;">
             <div style="font-size:13px;font-weight:900;margin-bottom:8px;">Sorteo</div>
 
@@ -1009,7 +999,7 @@ const contPE = document.getElementById("detalle-pozoextra");
     </div>
   </div>
 
-  
+
   <!-- MODAL: AGREGAR JUGADA (desde "¿Ganaste alguna vez?") -->
   <div class="modal-overlay" id="modal-ganaste-nombre">
     <div class="modal">
@@ -1204,7 +1194,7 @@ const contPE = document.getElementById("detalle-pozoextra");
   }
 
   // ========= Tema =========
-  
+
     const pantallaUltimos = safeGet("pantalla-ultimos");
     const btnIrUltimos = safeGet("btn-ir-ultimos");
     const btnVolverUltimos = safeGet("btn-volver-ultimos");
@@ -1440,8 +1430,8 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   // ========= Detalle simple =========
-  
-  
+
+
   function obtenerUltimoSorteo(){
     try{
       if(!Array.isArray(HISTORIAL_COMPLETO) || !HISTORIAL_COMPLETO.length) return null;
@@ -1765,7 +1755,7 @@ function abrirDetalleJugada(indice){
     return hits;
   }
 
-  
+
     function abrirPantallaUltimos(){
       mostrarPantalla("pantalla-ultimos");
       setSubtitulo("Últimos sorteos");
@@ -2063,7 +2053,7 @@ function abrirDetalleJugada(indice){
     safeGet("picker-close").addEventListener("click", cerrarPicker);
     safeGet("picker-cancel").addEventListener("click", cerrarPicker);
     pickerOverlay().addEventListener("click", (e) => { if (e.target === pickerOverlay()) cerrarPicker(); });
-  
+
     // --- Últimos sorteos (últimos 10) ---
     btnIrUltimos.addEventListener("click", () => {
       abrirPantallaUltimos();
@@ -2138,7 +2128,7 @@ function abrirDetalleJugada(indice){
       renderUltimosDetalle(null);
     });
 
-    
+
 
     // Elegir sorteo (abre modal con los últimos 10 sorteos)
     bindTap(btnUltimosElegirSorteo, () => { abrirModalSorteos(); });
