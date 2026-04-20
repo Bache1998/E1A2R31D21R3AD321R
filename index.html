@@ -1325,7 +1325,7 @@ const btnTema = () => safeGet("btn-tema");
 
         const nombre = String(j.nombre || "").toLowerCase();
         let fallback = null;
-        if(nombre.includes("tradicional")) fallback = 4;
+        if(nombre.includes("tradicional") || nombre.includes("segunda")) fallback = 4;
         else if(nombre.includes("revancha")) fallback = 6;
         else if(nombre.includes("siempre sale")) fallback = 5;
 
@@ -1434,12 +1434,27 @@ const btnTema = () => safeGet("btn-tema");
 
   function obtenerUltimoSorteo(){
     try{
-      if(!Array.isArray(HISTORIAL_COMPLETO) || !HISTORIAL_COMPLETO.length) return null;
-      let best = HISTORIAL_COMPLETO[0];
-      for(let i=1;i<HISTORIAL_COMPLETO.length;i++){
-        const s = HISTORIAL_COMPLETO[i];
-        if(Number(s.numeroSorteo) > Number(best.numeroSorteo)) best = s;
+      let best = null;
+
+      if(Array.isArray(HISTORIAL_COMPLETO) && HISTORIAL_COMPLETO.length){
+        best = HISTORIAL_COMPLETO[0];
+        for(let i=1;i<HISTORIAL_COMPLETO.length;i++){
+          const s = HISTORIAL_COMPLETO[i];
+          if(Number(s.numeroSorteo) > Number(best.numeroSorteo)) best = s;
+        }
       }
+
+      if(typeof DATOS !== "undefined" && DATOS && DATOS.numeroSorteo){
+        if(!best || Number(DATOS.numeroSorteo) >= Number(best.numeroSorteo)){
+          return {
+            fechaTexto: DATOS.fechaTexto ? String(DATOS.fechaTexto).replace(/^\w+\s+/,'') : "",
+            numeroSorteo: String(DATOS.numeroSorteo),
+            juegos: Array.isArray(DATOS.juegos) ? DATOS.juegos : [],
+            pozoExtra: DATOS.pozoExtra || {}
+          };
+        }
+      }
+
       return best;
     }catch(e){
       return null;
