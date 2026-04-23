@@ -58,6 +58,50 @@
     ruleta: document.getElementById("tab-ruleta"),
   };
 
+  // ===== MODO NOCTURNO GLOBAL (sincroniza todas las secciones/iframes) =====
+  const STORAGE_TEMA_GLOBAL = "quini6_tema_global";
+
+  function temaActualGlobal(){
+    try{
+      const t = localStorage.getItem(STORAGE_TEMA_GLOBAL);
+      return (t === "dark" || t === "light") ? t : "light";
+    }catch(e){ return "light"; }
+  }
+
+  function aplicarTemaAFrame(frame, tema){
+    try{
+      if(!frame || !frame.contentWindow || !frame.contentWindow.document) return;
+      const w = frame.contentWindow;
+      if(typeof w.aplicarTema === "function"){
+        w.aplicarTema(tema);
+        return;
+      }
+      if(w.document.body){
+        w.document.body.classList.toggle("dark", tema === "dark");
+        w.document.querySelectorAll("#btn-tema,.btn-tema").forEach(function(b){
+          b.textContent = tema === "dark" ? "☀️" : "🌙";
+        });
+      }
+    }catch(e){}
+  }
+
+  window.aplicarTemaGlobalQuini = function(tema){
+    const t = (tema === "dark") ? "dark" : "light";
+    try{ localStorage.setItem(STORAGE_TEMA_GLOBAL, t); }catch(e){}
+    Object.keys(frames).forEach(function(k){ aplicarTemaAFrame(frames[k], t); });
+  };
+
+  window.toggleTemaGlobalQuini = function(){
+    const actual = temaActualGlobal();
+    window.aplicarTemaGlobalQuini(actual === "dark" ? "light" : "dark");
+  };
+
+  Object.keys(frames).forEach(function(k){
+    frames[k].addEventListener("load", function(){
+      setTimeout(function(){ aplicarTemaAFrame(frames[k], temaActualGlobal()); }, 0);
+    });
+  });
+
   frames.ultimo.srcdoc = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -363,7 +407,7 @@
   </div>
 
   <script>
-    const STORAGE_TEMA = "quini6_tema";
+    const STORAGE_TEMA = "quini6_tema_global";
 
     // Datos del último sorteo (Sorteo 3366 - 19/04/2026)
     const DATOS={"fechaTexto":"Miércoles 22/04/2026","numeroSorteo":"3367","pozoAcumuladoTexto":"$5.500.000.000","juegos":[{"clave":"TRADICIONAL","nombre":"Tradicional Primer Sorteo","numeros":["00","10","12","20","30","37"],"ganadores":[{"aciertos":"6","ganadores":"Vacante*","premio":"$ 780.000.000,00"},{"aciertos":"5","ganadores":"14","premio":"$ 2.308.098,86"},{"aciertos":"4","ganadores":"820","premio":"$ 11.821,97"}]},{"clave":"SEGUNDA","nombre":"Tradicional La Segunda del Quini","numeros":["04","11","21","26","33","39"],"ganadores":[{"aciertos":"6","ganadores":"Vacante*","premio":"$ 780.000.000,00"},{"aciertos":"5","ganadores":"38","premio":"$ 850.352,21"},{"aciertos":"4","ganadores":"2006","premio":"$ 4.832,51"}]},{"clave":"REVANCHA","nombre":"Revancha","numeros":["10","12","17","27","41","44"],"ganadores":[{"aciertos":"6","ganadores":"Vacante*","premio":"$ 2.745.493.768,80"}]},{"clave":"SIEMPRE_SALE","nombre":"Siempre Sale","numeros":["07","13","20","23","35","41"],"ganadores":[{"aciertos":"5","ganadores":"42","premio":"$ 6.906.164,14"}]}],"pozoExtra":{"titulo":"Premio Extra","numeros":["00","04","10","10","11","12","12","17","20","21","26","27","30","33","37","39","41","44"],"ganadores":[{"aciertos":"6","ganadores":"630","premio":"$ 246.031,75","pozo":"$ 155.000.000,00"}]},"nota":"*El pozo se acumula para el primer premio del concurso siguiente según artículo 23° del reglamento"};
@@ -388,11 +432,19 @@
     }
 
     function toggleTema(){
+      if(window.parent && typeof window.parent.toggleTemaGlobalQuini === "function"){
+        window.parent.toggleTemaGlobalQuini();
+        return;
+      }
       const esDark = document.body.classList.contains("dark");
       const nuevo = esDark ? "light" : "dark";
       aplicarTema(nuevo);
       try{ localStorage.setItem(STORAGE_TEMA, nuevo); }catch(e){}
     }
+
+    window.addEventListener("storage", function(e){
+      if(e.key === STORAGE_TEMA) cargarTema();
+    });
 
     function renderizarUltimoSorteo(){
       document.getElementById("fecha-sorteo").textContent = DATOS.fechaTexto;
@@ -1062,7 +1114,7 @@
   "use strict";
 
   const STORAGE_JUGADAS = "quini6_mis_jugadas_v2";
-  const STORAGE_TEMA = "quini6_tema";
+  const STORAGE_TEMA = "quini6_tema_global";
 
     // --- Estado UI extra ---
     let ganasteNumsElegidos = [];
@@ -1239,11 +1291,19 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   function toggleTema(){
+    if(window.parent && typeof window.parent.toggleTemaGlobalQuini === "function"){
+      window.parent.toggleTemaGlobalQuini();
+      return;
+    }
     const esDark = document.body.classList.contains("dark");
     const nuevo = esDark ? "light" : "dark";
     aplicarTema(nuevo);
     safeLSSet(STORAGE_TEMA, nuevo);
   }
+
+  window.addEventListener("storage", function(e){
+    if(e.key === STORAGE_TEMA) cargarTema();
+  });
 
   // ========= Jugadas (localStorage) =========
   let jugadas = [];
@@ -2394,6 +2454,15 @@ body{
   opacity:.85;
   line-height:1.55;
 }
+
+body.dark{
+  --bg:#111111;
+  --card:#1a1a1a;
+  --text:#ffffff;
+  --shadow:0 6px 16px rgba(0,0,0,.9);
+}
+body.dark .price{background:#202020;border-color:#444;color:#ffffff;}
+body.dark .alert{background:#2a2410;color:#ffffff;}
 </style>
 </head>
 
@@ -2442,6 +2511,14 @@ body{
 
   </div>
 </div>
+
+<script>
+  const STORAGE_TEMA = "quini6_tema_global";
+  function aplicarTema(tema){ document.body.classList.toggle("dark", tema === "dark"); }
+  function cargarTema(){ try{ aplicarTema(localStorage.getItem(STORAGE_TEMA) || "light"); }catch(e){ aplicarTema("light"); } }
+  window.addEventListener("storage", function(e){ if(e.key === STORAGE_TEMA) cargarTema(); });
+  cargarTema();
+<\/script>
 
 <script>
   // Evita el menú de copiar/pegar por toque prolongado (Android/WebView)
@@ -2735,9 +2812,24 @@ body{
 
   /* anti-copy */
   body{ -webkit-user-select:none; user-select:none; }
+
+body.dark{
+  --bg:#111111;
+  --card:#1a1a1a;
+  --text:#ffffff;
+  --muted:#bbbbbb;
+  --shadow:0 10px 28px rgba(0,0,0,.9);
+}
 </style>
 </head>
 <body>
+<script>
+  const STORAGE_TEMA = "quini6_tema_global";
+  function aplicarTema(tema){ document.body.classList.toggle("dark", tema === "dark"); }
+  function cargarTema(){ try{ aplicarTema(localStorage.getItem(STORAGE_TEMA) || "light"); }catch(e){ aplicarTema("light"); } }
+  window.addEventListener("storage", function(e){ if(e.key === STORAGE_TEMA) cargarTema(); });
+  cargarTema();
+<\/script>
   <div class="wrap">
     <div class="card">
       <div class="wheelBox">
@@ -3191,6 +3283,8 @@ btns.wa.addEventListener("click", ()=>setActive("wa"));
       }
     }
   });
+
+  window.aplicarTemaGlobalQuini(temaActualGlobal());
 
 })();
 </script>
