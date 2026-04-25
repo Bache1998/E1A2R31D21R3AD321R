@@ -983,11 +983,12 @@
           <div style="margin-top:14px;">
             <div style="font-size:13px;font-weight:900;margin-bottom:8px;">Sorteo</div>
 
-            <button class="btn-add" id="btn-ultimos-elegir-sorteo">Elegir sorteo</button>
+            <!-- Selector tipo Loto Plus: sin modal, sin botón, selección directa -->
+            <select id="ultimos-select-sorteo" style="width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;font-weight:800;background:var(--color-card);color:var(--color-text);">
+              <option value="">— Seleccionar sorteo —</option>
+            </select>
 
-            <div style="margin-top:8px;font-size:13px;color:var(--color-muted);text-align:center;">
-              Seleccionado: <span id="ultimos-sorteo-seleccionado" style="font-weight:900;color:var(--color-text);">—</span>
-            </div>
+            <span id="ultimos-sorteo-seleccionado" style="display:none;">—</span>
 
             <!-- (Se mantiene el contenedor original por compatibilidad, pero no se usa en UI) -->
             <div id="ultimos-lista-sorteos" style="display:none;"></div>
@@ -1265,8 +1266,9 @@
     const btnGanasteCancelar = safeGet("btn-ganaste-cancelar");
     const btnGanasteGuardar = safeGet("btn-ganaste-guardar");
 
-    // Modal "Elegir sorteo"
+    // Selector "Sorteo" en Últimos sorteos (estilo Loto Plus)
     const btnUltimosElegirSorteo = safeGet("btn-ultimos-elegir-sorteo");
+    const ultimosSelectSorteo = safeGet("ultimos-select-sorteo");
     const ultimosSorteoSeleccionadoLabel = safeGet("ultimos-sorteo-seleccionado");
     const modalSorteos = safeGet("modal-sorteos");
     const modalSorteosLista = safeGet("modal-sorteos-lista");
@@ -1881,8 +1883,7 @@ function abrirDetalleJugada(indice){
       mostrarPantalla("pantalla-ultimos");
       setSubtitulo("Últimos sorteos");
       cargarSelectUltimos();
-      ultimosSorteoSeleccionado = null;
-      setSorteoSeleccionadoLabel(null);
+      cargarSelectSorteosLotoPlus();
       cerrarModalSorteos();
       ultimosDetalle.innerHTML = "";
       // mantener últimos números elegidos si ya había; si no, limpiar
@@ -1911,6 +1912,37 @@ function abrirDetalleJugada(indice){
       } else {
         selectJugadaUltimos.value = "";
       }
+    }
+
+    function cargarSelectSorteosLotoPlus(){
+      if(!ultimosSelectSorteo) return;
+      const ultimos = getUltimos10();
+      ultimosSelectSorteo.innerHTML = "";
+
+      ultimos.forEach((sorteo, index) => {
+        const opt = document.createElement("option");
+        opt.value = String(sorteo.numeroSorteo || index);
+        opt.textContent = (sorteo.fechaTexto || "") + " • Sorteo " + (sorteo.numeroSorteo || "");
+        ultimosSelectSorteo.appendChild(opt);
+      });
+
+      if(ultimos.length){
+        const actual = ultimosSorteoSeleccionado && ultimosSorteoSeleccionado.numeroSorteo ? String(ultimosSorteoSeleccionado.numeroSorteo) : String(ultimos[0].numeroSorteo);
+        const existe = ultimos.some(s => String(s.numeroSorteo) === actual);
+        ultimosSelectSorteo.value = existe ? actual : String(ultimos[0].numeroSorteo);
+        ultimosSorteoSeleccionado = ultimos.find(s => String(s.numeroSorteo) === ultimosSelectSorteo.value) || ultimos[0];
+        setSorteoSeleccionadoLabel(ultimosSorteoSeleccionado);
+      }else{
+        ultimosSorteoSeleccionado = null;
+        setSorteoSeleccionadoLabel(null);
+      }
+
+      ultimosSelectSorteo.onchange = function(){
+        const seleccionado = getUltimos10().find(s => String(s.numeroSorteo) === String(this.value));
+        ultimosSorteoSeleccionado = seleccionado || null;
+        setSorteoSeleccionadoLabel(ultimosSorteoSeleccionado);
+        renderUltimosDetalle(ultimosSorteoSeleccionado);
+      };
     }
 
     function renderUltimosLista(){
@@ -1954,7 +1986,7 @@ function abrirDetalleJugada(indice){
       if(!sorteo){
         ultimosDetalle.innerHTML = \`
           <div style="margin-top:10px;padding:12px;border-radius:12px;background:var(--color-card);box-shadow:var(--shadow-soft);text-align:center;">
-            <div style="font-weight:900;margin-bottom:6px;">Tocá “Elegir sorteo” para seleccionar un sorteo</div>
+            <div style="font-weight:900;margin-bottom:6px;">Seleccioná un sorteo del listado</div>
             <div style="font-size:13px;color:var(--color-muted);">Te mostramos cuántos aciertos hiciste en cada juego.</div>
           </div>\`;
         return;
@@ -2242,7 +2274,9 @@ function abrirDetalleJugada(indice){
     // Selección de jugada guardada para comparar
     selectJugadaUltimos.addEventListener("change", function(){
       const v = this.value;
-      ultimosSorteoSeleccionado = null;
+      if(!ultimosSorteoSeleccionado && ultimosSelectSorteo && ultimosSelectSorteo.value){
+        ultimosSorteoSeleccionado = getUltimos10().find(s => String(s.numeroSorteo) === String(ultimosSelectSorteo.value)) || null;
+      }
       ultimosDetalle.innerHTML = "";
 
       if(v === ""){
@@ -2266,7 +2300,7 @@ function abrirDetalleJugada(indice){
 
       // Mostrar tus números arriba y pedir que elija un sorteo
       renderBalls(ultimosNumerosElegidos, ultimosNumsElegidos, null);
-      renderUltimosDetalle(null);
+      renderUltimosDetalle(ultimosSorteoSeleccionado);
     });
 
 
@@ -2277,7 +2311,9 @@ function abrirDetalleJugada(indice){
     bindTap(modalSorteos, (e) => { if(e && e.target === modalSorteos) cerrarModalSorteos(); });
 // Elegir números para comparar (no guarda automáticamente)
     btnUltimosElegirNumeros.addEventListener("click", () => {
-      ultimosSorteoSeleccionado = null;
+      if(!ultimosSorteoSeleccionado && ultimosSelectSorteo && ultimosSelectSorteo.value){
+        ultimosSorteoSeleccionado = getUltimos10().find(s => String(s.numeroSorteo) === String(ultimosSelectSorteo.value)) || null;
+      }
       ultimosDetalle.innerHTML = "";
       ultimosModo = "custom";
 
@@ -2294,8 +2330,8 @@ function abrirDetalleJugada(indice){
           // Mostrar los 6 números elegidos arriba
           renderBalls(ultimosNumerosElegidos, ultimosNumsElegidos, null);
 
-          // Si todavía no se tocó un sorteo, mostramos el aviso
-          renderUltimosDetalle(null);
+          // Mostrar el resultado con el sorteo seleccionado en el desplegable
+          renderUltimosDetalle(ultimosSorteoSeleccionado);
         }
       });
     });
