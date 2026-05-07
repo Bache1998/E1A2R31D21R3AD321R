@@ -1851,6 +1851,24 @@ const btnTema = () => safeGet("btn-tema");
     return Promise.resolve(false);
   }
 
+  function volverInicioLuegoDeCompartir(){
+    try{
+      cerrarCompartirJugadas();
+    }catch(e){}
+
+    try{
+      if(typeof mostrarPantalla === "function"){
+        mostrarPantalla("pantalla-jugadas");
+      }
+    }catch(e){}
+
+    try{
+      if(window.parent && window.parent !== window){
+        window.parent.postMessage({ type:"IR_INICIO_DESPUES_COMPARTIR" }, "*");
+      }
+    }catch(e){}
+  }
+
   function compartirTextoJugadas(){
     const texto = textoCompartirSeleccionadas();
     const estado = safeGet("estado-compartir-jugadas");
@@ -1859,20 +1877,28 @@ const btnTema = () => safeGet("btn-tema");
       return;
     }
 
-    if(navigator.share){
+    /*
+      IMPORTANTE:
+      Se usa SOLO el menú nativo del celular con navigator.share.
+      Se eliminó el fallback a wa.me / navegador para evitar que se abra
+      una pantalla externa, navegador o publicidad al compartir.
+    */
+    if(navigator.share && (!navigator.canShare || navigator.canShare({ text: texto }))){
       navigator.share({ text: texto }).then(function(){
         if(estado) estado.textContent = "Compartido ✅";
+        volverInicioLuegoDeCompartir();
       }).catch(function(){
         if(estado) estado.textContent = "No se compartió. Podés copiarlo.";
       });
       return;
     }
 
-    copiarTextoCompartir().then(function(){
-      try{
-        const url = "https://wa.me/?text=" + encodeURIComponent(texto);
-        window.open(url, "_blank");
-      }catch(e){}
+    copiarTextoCompartir().then(function(ok){
+      if(estado){
+        estado.textContent = ok
+          ? "Tu celular/WebView no permitió abrir el menú nativo. Texto copiado ✅"
+          : "No se pudo abrir el menú nativo. Probá con Copiar.";
+      }
     });
   }
 
@@ -3917,6 +3943,12 @@ body.dark{
 
     if(d.type === "JUGADA_DUPLICADA"){
       showToast("Esta jugada ya fue agregada");
+      return;
+    }
+
+    if(d.type === "IR_INICIO_DESPUES_COMPARTIR"){
+      try{ setActive("ultimo"); }catch(e){}
+      showToast("Compartido ✅");
       return;
     }
   });
