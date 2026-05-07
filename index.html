@@ -692,6 +692,237 @@
       font-size:14px;font-weight:600;cursor:pointer;padding:4px 0;
     }
 
+
+    /* ===== COMPARTIR JUGADAS - integrado sin tocar guardado ===== */
+    .mis-jugadas-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .mis-jugadas-top h2{
+      flex:1;
+      text-align:center;
+      font-size:22px;
+      line-height:1.15;
+      margin:0;
+    }
+    .share-spacer{
+      width:78px;
+      min-width:78px;
+    }
+    .btn-share-mini{
+      width:78px;
+      min-width:78px;
+      border:none;
+      border-radius:10px;
+      background:#000;
+      color:#fff;
+      font-size:11px;
+      line-height:1.05;
+      font-weight:900;
+      padding:8px 6px;
+      cursor:pointer;
+      box-shadow:0 2px 8px rgba(0,0,0,.18);
+    }
+    body.dark .btn-share-mini{
+      background:#fff;
+      color:#111;
+      box-shadow:0 2px 8px rgba(0,0,0,.7);
+    }
+
+    .modal-compartir{
+      width:96%;
+      max-width:440px;
+      max-height:92vh;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      text-align:left;
+      padding:16px;
+    }
+    .share-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .share-title{
+      font-size:18px;
+      font-weight:900;
+      color:var(--color-text);
+      line-height:1.15;
+    }
+    .share-sub{
+      font-size:12px;
+      color:var(--color-muted);
+      margin-top:4px;
+      line-height:1.25;
+      font-weight:700;
+    }
+    .share-close{
+      border:none;
+      background:transparent;
+      color:var(--color-primary);
+      font-size:24px;
+      line-height:1;
+      font-weight:900;
+      cursor:pointer;
+      padding:0 3px;
+    }
+    .share-tools{
+      display:flex;
+      gap:8px;
+      margin:8px 0 10px;
+    }
+    .share-tool-btn{
+      flex:1;
+      border:none;
+      border-radius:10px;
+      padding:9px 8px;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      background:#e0e0e0;
+      color:#111;
+    }
+    body.dark .share-tool-btn{
+      background:#333;
+      color:#fff;
+    }
+    .share-list{
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      max-height:38vh;
+      padding-right:3px;
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+    }
+    .share-row{
+      border:1px solid rgba(0,0,0,.10);
+      background:var(--color-card);
+      border-radius:13px;
+      padding:12px 10px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      cursor:default;
+      box-shadow:0 2px 8px rgba(0,0,0,.08);
+    }
+    body.dark .share-row{
+      border-color:#444;
+      box-shadow:0 2px 8px rgba(0,0,0,.65);
+    }
+    .share-row.on{
+      border-color:var(--color-primary);
+      box-shadow:0 0 0 2px rgba(244,67,54,.18);
+    }
+    .share-check{
+      width:32px;
+      height:32px;
+      border-radius:9px;
+      border:2px solid #999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:900;
+      flex:0 0 32px;
+      background:transparent;
+      cursor:pointer;
+      touch-action:manipulation;
+      font-size:18px;
+    }
+    .share-row.on .share-check{
+      background:var(--color-primary);
+      border-color:var(--color-primary);
+    }
+    .share-info{
+      min-width:0;
+      flex:1;
+    }
+    .share-name{
+      font-size:12px;
+      font-weight:900;
+      color:var(--color-text);
+      margin-bottom:3px;
+    }
+    .share-nums{
+      font-size:17px;
+      font-weight:950;
+      letter-spacing:.6px;
+      color:var(--color-text);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .share-preview-label{
+      margin-top:12px;
+      margin-bottom:6px;
+      font-size:13px;
+      font-weight:900;
+      color:var(--color-text);
+    }
+    .share-preview{
+      width:100%;
+      min-height:78px;
+      resize:none;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.12);
+      background:#f7f7f7;
+      color:#111;
+      padding:10px;
+      font-size:15px;
+      font-weight:900;
+      line-height:1.45;
+      user-select:text;
+      -webkit-user-select:text;
+    }
+    body.dark .share-preview{
+      background:#111;
+      color:#fff;
+      border-color:#444;
+    }
+    .share-status{
+      min-height:18px;
+      margin-top:7px;
+      font-size:12px;
+      color:var(--color-muted);
+      text-align:center;
+      font-weight:800;
+    }
+    .share-actions{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+    }
+    .share-action-copy,
+    .share-action-main{
+      flex:1;
+      border:none;
+      border-radius:12px;
+      padding:12px 10px;
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .share-action-copy{
+      background:var(--color-primary);
+    }
+    .share-action-main{
+      background:#000;
+    }
+    .share-empty{
+      text-align:center;
+      color:var(--color-muted);
+      font-weight:800;
+      padding:14px 8px;
+    }
+
     .jugada-item{
       display:flex;align-items:center;justify-content:space-between;
       padding:10px;border-radius:10px;background:#fff;border:1px solid #ddd;
@@ -973,10 +1204,10 @@
       <!-- PANTALLA MIS JUGADAS -->
       <section id="pantalla-jugadas">
         <section class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <span style="width:70px;"></span>
+          <div class="mis-jugadas-top">
+            <span class="share-spacer"></span>
             <h2>Mis jugadas</h2>
-            <span style="width:70px;"></span>
+            <button class="btn-share-mini" id="btn-compartir-jugadas" type="button">Compartir<br>jugadas</button>
           </div>
 
           <div id="lista-jugadas" style="margin-top:10px;"></div>
@@ -1177,6 +1408,36 @@
       <div class="modal-buttons" style="margin-top:14px;">
         <button class="btn-modal btn-cancelar" id="btn-no-eliminar">No</button>
         <button class="btn-modal btn-guardar" id="btn-si-eliminar">Sí</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL COMPARTIR JUGADAS -->
+  <div class="modal-overlay" id="modal-compartir-jugadas">
+    <div class="modal modal-compartir">
+      <div class="share-head">
+        <div>
+          <div class="share-title">Compartir jugadas</div>
+          <div class="share-sub">Seleccioná una o varias jugadas. Se enviarán una por línea, listas para mandar al agenciero.</div>
+        </div>
+        <button class="share-close" id="btn-cerrar-compartir-jugadas" type="button">✕</button>
+      </div>
+
+      <div class="share-tools">
+        <button class="share-tool-btn" id="btn-compartir-todas-jugadas" type="button">Seleccionar todas</button>
+        <button class="share-tool-btn" id="btn-limpiar-compartir-jugadas" type="button">Limpiar</button>
+      </div>
+
+      <div class="share-list" id="lista-compartir-jugadas"></div>
+
+      <div class="share-preview-label">Texto que se va a compartir</div>
+      <textarea class="share-preview" id="texto-compartir-jugadas" readonly placeholder="Seleccioná una o más jugadas"></textarea>
+      <div class="share-status" id="estado-compartir-jugadas"></div>
+
+      <div class="share-actions">
+        <button class="share-action-copy" id="btn-copiar-compartir-jugadas" type="button">Copiar</button>
+        <button class="share-action-main" id="btn-enviar-compartir-jugadas" type="button">Compartir</button>
       </div>
     </div>
   </div>
@@ -1395,6 +1656,7 @@ const btnTema = () => safeGet("btn-tema");
   // ========= Jugadas (localStorage) =========
   let jugadas = [];
   let indiceSeleccionado = null;
+  let compartirSeleccionadas = new Set();
 
   function cargarJugadas(){
     try {
@@ -1422,6 +1684,196 @@ const btnTema = () => safeGet("btn-tema");
     safeLSSet(STORAGE_JUGADAS, JSON.stringify(jugadas));
     // refrescar selects que dependen de jugadas
     try{ if (typeof cargarSelectUltimos === "function") cargarSelectUltimos(); }catch(e){}
+    try{ if (typeof refrescarCompartirJugadas === "function") refrescarCompartirJugadas(); }catch(e){}
+  }
+
+
+  // ========= Compartir jugadas =========
+  function formatoCompartirJugada(jugada){
+    try{
+      const nums = ordenarNumeros((jugada && jugada.numeros) ? jugada.numeros : []);
+      return nums.slice(0, 6).map(fmt2).join("-");
+    }catch(e){
+      return "";
+    }
+  }
+
+  function textoCompartirSeleccionadas(){
+    const lineas = [];
+    compartirSeleccionadas.forEach(function(idx){
+      const j = jugadas[idx];
+      const linea = formatoCompartirJugada(j);
+      if(linea) lineas.push(linea);
+    });
+    return lineas.join("\\n");
+  }
+
+  function actualizarPreviewCompartir(){
+    const txt = safeGet("texto-compartir-jugadas");
+    if(txt) txt.value = textoCompartirSeleccionadas();
+    const estado = safeGet("estado-compartir-jugadas");
+    if(estado){
+      const c = compartirSeleccionadas.size;
+      estado.textContent = c ? (c + " jugada" + (c === 1 ? "" : "s") + " seleccionada" + (c === 1 ? "" : "s")) : "Seleccioná al menos una jugada.";
+    }
+  }
+
+  function renderCompartirJugadas(){
+    const lista = safeGet("lista-compartir-jugadas");
+    if(!lista) return;
+    lista.innerHTML = "";
+
+    if(!jugadas.length){
+      lista.innerHTML = '<div class="share-empty">No tenés jugadas guardadas para compartir.</div>';
+      compartirSeleccionadas.clear();
+      actualizarPreviewCompartir();
+      return;
+    }
+
+    // Si se borró alguna jugada, limpiamos índices que ya no existen.
+    Array.from(compartirSeleccionadas).forEach(function(idx){
+      if(!jugadas[idx]) compartirSeleccionadas.delete(idx);
+    });
+
+    jugadas.forEach(function(j, i){
+      const row = document.createElement("div");
+      row.className = "share-row" + (compartirSeleccionadas.has(i) ? " on" : "");
+
+      const check = document.createElement("div");
+      check.className = "share-check";
+      check.textContent = compartirSeleccionadas.has(i) ? "✓" : "";
+
+      const info = document.createElement("div");
+      info.className = "share-info";
+
+      const name = document.createElement("div");
+      name.className = "share-name";
+      name.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "");
+
+      const nums = document.createElement("div");
+      nums.className = "share-nums";
+      nums.textContent = formatoCompartirJugada(j);
+
+      info.appendChild(name);
+      info.appendChild(nums);
+      row.appendChild(check);
+      row.appendChild(info);
+
+      bindTap(check, function(e){
+        try{ if(e && e.stopPropagation) e.stopPropagation(); }catch(_e){}
+        if(compartirSeleccionadas.has(i)) compartirSeleccionadas.delete(i);
+        else compartirSeleccionadas.add(i);
+        renderCompartirJugadas();
+      });
+
+      lista.appendChild(row);
+    });
+
+    actualizarPreviewCompartir();
+  }
+
+  function refrescarCompartirJugadas(){
+    const modal = safeGet("modal-compartir-jugadas");
+    if(modal && modal.style.display === "flex"){
+      renderCompartirJugadas();
+    }
+  }
+
+  function abrirCompartirJugadas(){
+    cargarJugadas();
+    renderizarJugadas();
+    compartirSeleccionadas.clear();
+    for(let i = 0; i < jugadas.length; i++){
+      compartirSeleccionadas.add(i);
+    }
+    renderCompartirJugadas();
+    const modal = safeGet("modal-compartir-jugadas");
+    if(modal) modal.style.display = "flex";
+  }
+
+  function cerrarCompartirJugadas(){
+    const modal = safeGet("modal-compartir-jugadas");
+    if(modal) modal.style.display = "none";
+  }
+
+  function seleccionarTodasCompartir(){
+    compartirSeleccionadas.clear();
+    for(let i = 0; i < jugadas.length; i++){
+      compartirSeleccionadas.add(i);
+    }
+    renderCompartirJugadas();
+  }
+
+  function limpiarCompartir(){
+    compartirSeleccionadas.clear();
+    renderCompartirJugadas();
+  }
+
+  function copiarTextoCompartir(){
+    const texto = textoCompartirSeleccionadas();
+    const estado = safeGet("estado-compartir-jugadas");
+    if(!texto){
+      if(estado) estado.textContent = "Seleccioná una o más jugadas.";
+      return Promise.resolve(false);
+    }
+
+    function ok(){
+      if(estado) estado.textContent = "Texto copiado ✅";
+      return true;
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(texto).then(ok).catch(function(){
+        const ta = safeGet("texto-compartir-jugadas");
+        try{
+          if(ta){
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            return ok();
+          }
+        }catch(e){}
+        if(estado) estado.textContent = "No se pudo copiar automáticamente.";
+        return false;
+      });
+    }
+
+    try{
+      const ta = safeGet("texto-compartir-jugadas");
+      if(ta){
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        return Promise.resolve(ok());
+      }
+    }catch(e){}
+    if(estado) estado.textContent = "No se pudo copiar automáticamente.";
+    return Promise.resolve(false);
+  }
+
+  function compartirTextoJugadas(){
+    const texto = textoCompartirSeleccionadas();
+    const estado = safeGet("estado-compartir-jugadas");
+    if(!texto){
+      if(estado) estado.textContent = "Seleccioná una o más jugadas.";
+      return;
+    }
+
+    if(navigator.share){
+      navigator.share({ text: texto }).then(function(){
+        if(estado) estado.textContent = "Compartido ✅";
+      }).catch(function(){
+        if(estado) estado.textContent = "No se compartió. Podés copiarlo.";
+      });
+      return;
+    }
+
+    copiarTextoCompartir().then(function(){
+      try{
+        const url = "https://wa.me/?text=" + encodeURIComponent(texto);
+        window.open(url, "_blank");
+      }catch(e){}
+    });
   }
 
   // ========= Navegación pantallas =========
@@ -2401,6 +2853,18 @@ function abrirDetalleJugada(indice){
     safeGet("btn-no-eliminar-todas").addEventListener("click", cancelarEliminarTodas);
     safeGet("btn-si-eliminar-todas").addEventListener("click", confirmarEliminarTodas);
     modalEliminarTodas().addEventListener("click", (e) => { if (e.target === modalEliminarTodas()) cancelarEliminarTodas(); });
+
+
+    // Compartir jugadas
+    bindTap(safeGet("btn-compartir-jugadas"), abrirCompartirJugadas);
+    bindTap(safeGet("btn-cerrar-compartir-jugadas"), cerrarCompartirJugadas);
+    bindTap(safeGet("btn-compartir-todas-jugadas"), seleccionarTodasCompartir);
+    bindTap(safeGet("btn-limpiar-compartir-jugadas"), limpiarCompartir);
+    bindTap(safeGet("btn-copiar-compartir-jugadas"), function(){ copiarTextoCompartir(); });
+    bindTap(safeGet("btn-enviar-compartir-jugadas"), compartirTextoJugadas);
+    bindTap(safeGet("modal-compartir-jugadas"), function(e){
+      if(e && e.target === safeGet("modal-compartir-jugadas")) cerrarCompartirJugadas();
+    });
 
     // Picker cerrar
     safeGet("picker-close").addEventListener("click", cerrarPicker);
