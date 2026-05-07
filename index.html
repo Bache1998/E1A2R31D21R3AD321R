@@ -1822,33 +1822,34 @@ const btnTema = () => safeGet("btn-tema");
       return true;
     }
 
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      return navigator.clipboard.writeText(texto).then(ok).catch(function(){
-        const ta = safeGet("texto-compartir-jugadas");
-        try{
-          if(ta){
-            ta.focus();
-            ta.select();
-            document.execCommand("copy");
-            return ok();
-          }
-        }catch(e){}
+    function copiarConTextareaOculto(){
+      try{
+        const tmp = document.createElement("textarea");
+        tmp.value = texto;
+        tmp.setAttribute("readonly", "readonly");
+        tmp.style.position = "fixed";
+        tmp.style.left = "-9999px";
+        tmp.style.top = "0";
+        tmp.style.opacity = "0";
+        document.body.appendChild(tmp);
+        tmp.focus();
+        tmp.select();
+        document.execCommand("copy");
+        document.body.removeChild(tmp);
+        return ok();
+      }catch(e){
         if(estado) estado.textContent = "No se pudo copiar automáticamente.";
         return false;
+      }
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(texto).then(ok).catch(function(){
+        return copiarConTextareaOculto();
       });
     }
 
-    try{
-      const ta = safeGet("texto-compartir-jugadas");
-      if(ta){
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        return Promise.resolve(ok());
-      }
-    }catch(e){}
-    if(estado) estado.textContent = "No se pudo copiar automáticamente.";
-    return Promise.resolve(false);
+    return Promise.resolve(copiarConTextareaOculto());
   }
 
   function compartirTextoJugadas(){
@@ -1859,21 +1860,58 @@ const btnTema = () => safeGet("btn-tema");
       return;
     }
 
-    if(navigator.share){
-      navigator.share({ text: texto }).then(function(){
-        if(estado) estado.textContent = "Compartido ✅";
-      }).catch(function(){
-        if(estado) estado.textContent = "No se compartió. Podés copiarlo.";
-      });
-      return;
+    /*
+      Método especial para AppCreator24:
+      usa el esquema oficial whatsapp://send?text=...
+      para abrir WhatsApp instalado en el celular, sin depender de WhatsApp Web.
+      Los saltos de línea se mantienen con encodeURIComponent (%0A).
+    */
+    const url = "whatsapp://send?text=" + encodeURIComponent(texto);
+
+    try{
+      if(estado) estado.textContent = "Abriendo WhatsApp...";
+      try{
+        if(window.parent && window.parent !== window){
+          window.parent.postMessage({ type:"COMPARTIR_JUGADAS_WHATSAPP" }, "*");
+        }
+      }catch(_e){}
+      cerrarCompartirJugadas();
+    }catch(_e){}
+
+    let enviado = false;
+
+    try{
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_top";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ try{ document.body.removeChild(a); }catch(_e){} }, 1200);
+      enviado = true;
+    }catch(e){}
+
+    if(!enviado){
+      try{
+        if(window.top){
+          window.top.location.href = url;
+          enviado = true;
+        }
+      }catch(e){}
     }
 
-    copiarTextoCompartir().then(function(){
+    if(!enviado){
       try{
-        const url = "https://wa.me/?text=" + encodeURIComponent(texto);
-        window.open(url, "_blank");
+        window.location.href = url;
+        enviado = true;
       }catch(e){}
-    });
+    }
+
+    if(!enviado){
+      copiarTextoCompartir().then(function(){
+        if(estado) estado.textContent = "No se pudo abrir WhatsApp. Texto copiado ✅";
+      });
+    }
   }
 
   // ========= Navegación pantallas =========
@@ -3893,6 +3931,33 @@ body.dark{
     ruleta: document.getElementById("btn-ruleta"),
   };
 
+  let volverInicioCompartirPendiente = false;
+  function programarVolverInicioDespuesDeCompartir(){
+    volverInicioCompartirPendiente = true;
+
+    // Si WhatsApp se abre, al volver a la app queda en Inicio.
+    setTimeout(function(){
+      if(volverInicioCompartirPendiente){
+        try{ setActive("ultimo"); }catch(e){}
+        volverInicioCompartirPendiente = false;
+      }
+    }, 1800);
+  }
+
+  window.addEventListener("focus", function(){
+    if(volverInicioCompartirPendiente){
+      try{ setActive("ultimo"); }catch(e){}
+      volverInicioCompartirPendiente = false;
+    }
+  });
+
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden && volverInicioCompartirPendiente){
+      try{ setActive("ultimo"); }catch(e){}
+      volverInicioCompartirPendiente = false;
+    }
+  });
+
   function showToast(msg){
     const t = document.getElementById("toast");
     t.textContent = msg;
@@ -3905,6 +3970,12 @@ body.dark{
   window.addEventListener("message", function(ev){
     const d = ev && ev.data ? ev.data : {};
     if(!d || !d.type) return;
+
+    if(d.type === "COMPARTIR_JUGADAS_WHATSAPP"){
+      programarVolverInicioDespuesDeCompartir();
+      showToast("Abriendo WhatsApp...");
+      return;
+    }
 
     if(d.type === "JUGADA_GUARDADA"){
       try{
