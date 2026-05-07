@@ -1824,14 +1824,20 @@ const btnTema = () => safeGet("btn-tema");
 
     if(navigator.clipboard && navigator.clipboard.writeText){
       return navigator.clipboard.writeText(texto).then(ok).catch(function(){
-        const ta = safeGet("texto-compartir-jugadas");
         try{
-          if(ta){
-            ta.focus();
-            ta.select();
-            document.execCommand("copy");
-            return ok();
-          }
+          const tmp = document.createElement("textarea");
+          tmp.value = texto;
+          tmp.setAttribute("readonly", "readonly");
+          tmp.style.position = "fixed";
+          tmp.style.left = "-9999px";
+          tmp.style.top = "0";
+          tmp.style.opacity = "0";
+          document.body.appendChild(tmp);
+          tmp.focus();
+          tmp.select();
+          document.execCommand("copy");
+          document.body.removeChild(tmp);
+          return ok();
         }catch(e){}
         if(estado) estado.textContent = "No se pudo copiar automáticamente.";
         return false;
@@ -1839,13 +1845,19 @@ const btnTema = () => safeGet("btn-tema");
     }
 
     try{
-      const ta = safeGet("texto-compartir-jugadas");
-      if(ta){
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        return Promise.resolve(ok());
-      }
+      const tmp = document.createElement("textarea");
+      tmp.value = texto;
+      tmp.setAttribute("readonly", "readonly");
+      tmp.style.position = "fixed";
+      tmp.style.left = "-9999px";
+      tmp.style.top = "0";
+      tmp.style.opacity = "0";
+      document.body.appendChild(tmp);
+      tmp.focus();
+      tmp.select();
+      document.execCommand("copy");
+      document.body.removeChild(tmp);
+      return Promise.resolve(ok());
     }catch(e){}
     if(estado) estado.textContent = "No se pudo copiar automáticamente.";
     return Promise.resolve(false);
@@ -1878,11 +1890,18 @@ const btnTema = () => safeGet("btn-tema");
     }
 
     /*
-      IMPORTANTE:
-      Se usa SOLO el menú nativo del celular con navigator.share.
-      Se eliminó el fallback a wa.me / navegador para evitar que se abra
-      una pantalla externa, navegador o publicidad al compartir.
+      Se intenta compartir desde la ventana principal/top, no desde el iframe.
+      En muchos WebView el navigator.share dentro del iframe se bloquea,
+      pero desde la ventana principal abre el menú nativo del celular.
     */
+    try{
+      if(window.parent && window.parent !== window && typeof window.parent.compartirJugadasNativoQuini === "function"){
+        if(estado) estado.textContent = "Abriendo menú de compartir...";
+        window.parent.compartirJugadasNativoQuini(texto);
+        return;
+      }
+    }catch(e){}
+
     if(navigator.share && (!navigator.canShare || navigator.canShare({ text: texto }))){
       navigator.share({ text: texto }).then(function(){
         if(estado) estado.textContent = "Compartido ✅";
@@ -3031,6 +3050,14 @@ function abrirDetalleJugada(indice){
         cargarJugadas();
         renderizarJugadas();
       }
+
+      if(d && d.type === "COMPARTIR_JUGADAS_RESULT"){
+        const estado = safeGet("estado-compartir-jugadas");
+        if(estado && d.message) estado.textContent = d.message;
+        if(d.ok){
+          volverInicioLuegoDeCompartir();
+        }
+      }
     }catch(e){}
   });
 
@@ -3953,7 +3980,83 @@ body.dark{
     }
   });
 
-  function setActive(key){
+  
+  function enviarResultadoCompartir(ok, message){
+    try{
+      if(frames.jugadas && frames.jugadas.contentWindow){
+        frames.jugadas.contentWindow.postMessage({
+          type:"COMPARTIR_JUGADAS_RESULT",
+          ok:!!ok,
+          message:message || ""
+        }, "*");
+      }
+    }catch(e){}
+  }
+
+  function copiarTextoOcultoTop(texto){
+    try{
+      const tmp = document.createElement("textarea");
+      tmp.value = String(texto || "");
+      tmp.setAttribute("readonly", "readonly");
+      tmp.style.position = "fixed";
+      tmp.style.left = "-9999px";
+      tmp.style.top = "0";
+      tmp.style.opacity = "0";
+      document.body.appendChild(tmp);
+      tmp.focus();
+      tmp.select();
+      document.execCommand("copy");
+      document.body.removeChild(tmp);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  window.compartirJugadasNativoQuini = function(texto){
+    const textoFinal = String(texto || "").trim();
+    if(!textoFinal){
+      enviarResultadoCompartir(false, "Seleccioná una o más jugadas.");
+      return false;
+    }
+
+    // 1) Mejor opción: menú nativo real del celular.
+    try{
+      if(navigator.share && (!navigator.canShare || navigator.canShare({ text: textoFinal }))){
+        navigator.share({ text: textoFinal }).then(function(){
+          enviarResultadoCompartir(true, "Compartido ✅");
+          try{ setActive("ultimo"); }catch(e){}
+          showToast("Compartido ✅");
+        }).catch(function(){
+          enviarResultadoCompartir(false, "No se compartió. Podés copiarlo.");
+        });
+        return true;
+      }
+    }catch(e){}
+
+    // 2) Segundo intento Android: abrir selector nativo SEND sin wa.me ni navegador web.
+    //    En algunos WebView puede no estar permitido; si falla, queda Copiar como respaldo.
+    try{
+      const intentUrl =
+        "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" +
+        encodeURIComponent(textoFinal) +
+        ";end";
+      window.location.href = intentUrl;
+      enviarResultadoCompartir(true, "Abriendo selector de aplicaciones...");
+      setTimeout(function(){
+        try{ setActive("ultimo"); }catch(e){}
+      }, 700);
+      return true;
+    }catch(e){}
+
+    // 3) Respaldo seguro: copiar sin abrir navegador ni publicidad.
+    const copiado = copiarTextoOcultoTop(textoFinal);
+    enviarResultadoCompartir(false, copiado ? "No se pudo abrir el menú. Texto copiado ✅" : "No se pudo abrir el menú nativo. Probá con Copiar.");
+    return false;
+  };
+
+
+function setActive(key){
     Object.keys(frames).forEach(k=>frames[k].classList.toggle("active", k===key));
     Object.keys(btns).forEach(k=>btns[k].classList.toggle("active", k===key));
   }
