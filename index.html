@@ -11,7 +11,7 @@
     --bg:#f4f4f4;
     --text:#222;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;overflow:hidden;}
   .wrap{height:100%;display:flex;flex-direction:column;}
@@ -637,6 +637,7 @@
     *{
       user-select:none;
       -webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
       box-sizing:border-box;
       margin:0;
       padding:0;
@@ -947,6 +948,68 @@
     .btn-delete{color:var(--color-danger);}
 
     .jugada-actions{display:flex;align-items:center;gap:8px;}
+    #lista-jugadas.jugadas-scroll-box{
+      max-height:322px;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      border:1px solid rgba(0,0,0,.32);
+      border-radius:8px;
+      padding:4px;
+      margin-top:10px!important;
+    }
+    body.dark #lista-jugadas.jugadas-scroll-box{
+      border-color:rgba(255,255,255,.32);
+    }
+    #lista-jugadas.jugadas-scroll-box .jugada-item:last-child{
+      margin-bottom:0;
+    }
+    .fav-btn{
+      background:none;
+      border:none;
+      color:#111;
+      font-size:18px;
+      font-weight:950;
+      cursor:pointer;
+      padding:0 2px;
+      min-width:34px;
+      height:24px;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .fav-btn.on{
+      color:#111!important;
+      text-shadow:0 1px 2px rgba(0,0,0,.18);
+    }
+    .estado-carita{
+      width:26px;
+      height:26px;
+      font-size:20px;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:#111;
+      font-weight:900;
+      font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif;
+    }
+    .jugada-ganadora .estado-carita,
+    .jugada-pendiente .estado-carita,
+    .jugada-perdedora .estado-carita,
+    .jugada-ganadora .fav-btn,
+    .jugada-pendiente .fav-btn,
+    .jugada-perdedora .fav-btn{
+      color:#111!important;
+    }
+    button,.btn-simple,.btn-add,.btn-danger-full,.btn-secondary-full,.btn-modal,.picker-close,.picker-btn-cancel,.num-btn,.ball,.jugada-item,.share-row,.share-check{
+      -webkit-tap-highlight-color:transparent;
+      outline:none;
+    }
+    button:focus,.num-btn:focus,.jugada-item:focus,.share-check:focus{
+      outline:none;
+    }
     .jugada-detalles-text{
       font-size:14px;
       font-weight:800;
@@ -1664,16 +1727,19 @@ const btnTema = () => safeGet("btn-tema");
       const parsed = raw ? JSON.parse(raw) : [];
       jugadas = (parsed || []).map((item, idx) => {
         if (Array.isArray(item)) {
-          return { nombre: "Jugada " + (idx+1), numeros: ordenarNumeros(item), fecha: "" };
+          return { nombre: "Jugada " + (idx+1), numeros: ordenarNumeros(item), fecha: "", favoritoAt: null };
         }
         if (item && Array.isArray(item.numeros)) {
+          const favRaw = item.favoritoAt || item.favAt || item.favoritaAt;
+          const favNum = favRaw ? Number(favRaw) : 0;
           return {
             nombre: item.nombre || ("Jugada " + (idx+1)),
             numeros: ordenarNumeros(item.numeros || []),
-            fecha: item.fecha || ""
+            fecha: item.fecha || "",
+            favoritoAt: favNum > 0 ? favNum : null
           };
         }
-        return { nombre: "Jugada " + (idx+1), numeros: [], fecha: "" };
+        return { nombre: "Jugada " + (idx+1), numeros: [], fecha: "", favoritoAt: null };
       });
     } catch(e) {
       jugadas = [];
@@ -1687,12 +1753,80 @@ const btnTema = () => safeGet("btn-tema");
     try{ if (typeof refrescarCompartirJugadas === "function") refrescarCompartirJugadas(); }catch(e){}
   }
 
+  function claveJugadaNumeros(numeros){
+    return ordenarNumeros(numeros || []).slice(0,6).map(fmt2).join("-");
+  }
+
+  function jugadaYaExistePorNumeros(numeros, ignorarIndex){
+    const clave = claveJugadaNumeros(numeros || []);
+    if(!clave || clave.split("-").length !== 6) return false;
+    return (jugadas || []).some(function(j, i){
+      if(typeof ignorarIndex === "number" && i === ignorarIndex) return false;
+      return claveJugadaNumeros((j && j.numeros) ? j.numeros : []) === clave;
+    });
+  }
+
+  function avisarJugadaDuplicada(){
+    try{ window.parent && window.parent.postMessage({type:"JUGADA_DUPLICADA"}, "*"); }catch(e){}
+    try{
+      const estado = safeGet("estado-compartir-jugadas");
+      if(estado) estado.textContent = "Números ya agregados";
+    }catch(e){}
+  }
+
+  function favoritosOrdenados(){
+    return (jugadas || [])
+      .map(function(j, i){ return { j:j, i:i, t:Number(j && j.favoritoAt ? j.favoritoAt : 0) }; })
+      .filter(function(x){ return x.t > 0; })
+      .sort(function(a,b){ return (a.t - b.t) || (a.i - b.i); });
+  }
+
+  function ordenVisualJugadas(){
+    const favs = favoritosOrdenados();
+    const usados = new Set(favs.map(function(x){ return x.i; }));
+    const normales = (jugadas || [])
+      .map(function(j, i){ return i; })
+      .filter(function(i){ return !usados.has(i); });
+    return favs.map(function(x){ return x.i; }).concat(normales);
+  }
+
+  function numeroFavoritoPorIndice(idx){
+    const favs = favoritosOrdenados();
+    const pos = favs.findIndex(function(x){ return x.i === idx; });
+    return pos >= 0 ? (pos + 1) : "";
+  }
+
+  function toggleFavoritoJugada(idx){
+    if(!jugadas[idx]) return;
+    if(jugadas[idx].favoritoAt){
+      jugadas[idx].favoritoAt = null;
+      try{ window.parent && window.parent.postMessage({type:"TOAST", message:"Favorito quitado"}, "*"); }catch(e){}
+    }else{
+      jugadas[idx].favoritoAt = Date.now();
+      try{ window.parent && window.parent.postMessage({type:"TOAST", message:"Jugada marcada como favorita"}, "*"); }catch(e){}
+    }
+    guardarJugadas();
+    renderizarJugadas();
+  }
+
+  function caritaResultadoJugada(estado){
+    if(estado && estado.ganadora) return "😊";
+    if(estado && estado.consultaSiempreSale) return "🤔";
+    return "😢";
+  }
+
 
   // ========= Compartir jugadas =========
-  function formatoCompartirJugada(jugada){
+  function formatoCompartirJugada(jugada, idx){
     try{
       const nums = ordenarNumeros((jugada && jugada.numeros) ? jugada.numeros : []);
-      return nums.slice(0, 6).map(fmt2).join("-");
+      if(nums.length < 6) return "";
+      let linea = nums.slice(0, 6).map(fmt2).join("-");
+      const favNro = (typeof idx === "number") ? numeroFavoritoPorIndice(idx) : "";
+      if(jugada && jugada.favoritoAt && favNro){
+        linea += " ⭐" + favNro;
+      }
+      return linea;
     }catch(e){
       return "";
     }
@@ -1700,9 +1834,10 @@ const btnTema = () => safeGet("btn-tema");
 
   function textoCompartirSeleccionadas(){
     const lineas = [];
-    compartirSeleccionadas.forEach(function(idx){
+    ordenVisualJugadas().forEach(function(idx){
+      if(!compartirSeleccionadas.has(idx)) return;
       const j = jugadas[idx];
-      const linea = formatoCompartirJugada(j);
+      const linea = formatoCompartirJugada(j, idx);
       if(linea) lineas.push(linea);
     });
     return lineas.join("\\n");
@@ -1735,7 +1870,11 @@ const btnTema = () => safeGet("btn-tema");
       if(!jugadas[idx]) compartirSeleccionadas.delete(idx);
     });
 
-    jugadas.forEach(function(j, i){
+    ordenVisualJugadas().forEach(function(i){
+      const j = jugadas[i];
+      if(!j) return;
+      const favNro = numeroFavoritoPorIndice(i);
+
       const row = document.createElement("div");
       row.className = "share-row" + (compartirSeleccionadas.has(i) ? " on" : "");
 
@@ -1748,11 +1887,11 @@ const btnTema = () => safeGet("btn-tema");
 
       const name = document.createElement("div");
       name.className = "share-name";
-      name.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "");
+      name.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "") + (favNro ? " ⭐" + favNro : "");
 
       const nums = document.createElement("div");
       nums.className = "share-nums";
-      nums.textContent = formatoCompartirJugada(j);
+      nums.textContent = formatoCompartirJugada(j, i);
 
       info.appendChild(name);
       info.appendChild(nums);
@@ -1771,6 +1910,7 @@ const btnTema = () => safeGet("btn-tema");
 
     actualizarPreviewCompartir();
   }
+
 
   function refrescarCompartirJugadas(){
     const modal = safeGet("modal-compartir-jugadas");
@@ -2134,14 +2274,19 @@ const btnTema = () => safeGet("btn-tema");
   function renderizarJugadas(){
     const lista = safeGet("lista-jugadas");
     lista.innerHTML = "";
+    lista.classList.toggle("jugadas-scroll-box", jugadas.length > 4);
 
     if (!jugadas.length) {
-      lista.innerHTML = '<div style="text-align:center; color:#777;">No agregaste jugadas.</div>';
+      lista.classList.remove("jugadas-scroll-box");
+      lista.innerHTML = '<div style="text-align:center; color:#777; padding:10px 0;">No agregaste jugadas.</div>';
       return;
     }
 
-    jugadas.forEach((j, i) => {
+    ordenVisualJugadas().forEach((i) => {
+      const j = jugadas[i];
+      if(!j) return;
       const estado = calcularEstadoJugadaUltimoSorteo(j.numeros || []);
+      const favNro = numeroFavoritoPorIndice(i);
 
       const item = document.createElement("div");
       item.className = "jugada-item " + (estado.ganadora ? "jugada-ganadora" : (estado.consultaSiempreSale ? "jugada-pendiente" : "jugada-perdedora"));
@@ -2151,7 +2296,7 @@ const btnTema = () => safeGet("btn-tema");
 
       const titulo = document.createElement("div");
       titulo.className = "jugada-titulo";
-      titulo.textContent = j.nombre + (j.fecha ? " (" + j.fecha + ")" : "");
+      titulo.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "") + (favNro ? " ⭐" + favNro : "");
 
       const numeros = document.createElement("div");
       numeros.className = "jugada-numeros";
@@ -2162,6 +2307,20 @@ const btnTema = () => safeGet("btn-tema");
 
       const contBtns = document.createElement("div");
       contBtns.className = "jugada-actions";
+
+      const carita = document.createElement("div");
+      carita.className = "estado-carita";
+      carita.textContent = caritaResultadoJugada(estado);
+
+      const btnFav = document.createElement("button");
+      btnFav.className = "fav-btn" + (j.favoritoAt ? " on" : "");
+      btnFav.type = "button";
+      btnFav.textContent = j.favoritoAt ? ("⭐" + favNro) : "☆";
+      btnFav.setAttribute("aria-label", j.favoritoAt ? "Quitar favorita" : "Marcar favorita");
+      btnFav.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleFavoritoJugada(i);
+      });
 
       const detalles = document.createElement("div");
       detalles.className = "jugada-detalles-text";
@@ -2185,6 +2344,8 @@ const btnTema = () => safeGet("btn-tema");
         preguntarEliminarJugada(i);
       });
 
+      contBtns.appendChild(carita);
+      contBtns.appendChild(btnFav);
       contBtns.appendChild(detalles);
       contBtns.appendChild(btnEdit);
       contBtns.appendChild(btnDel);
@@ -2198,7 +2359,8 @@ const btnTema = () => safeGet("btn-tema");
     });
   }
 
-  // ========= Detalle simple =========
+  
+// ========= Detalle simple =========
 
 
   function obtenerUltimoSorteo(){
@@ -2446,6 +2608,12 @@ function abrirDetalleJugada(indice){
       return;
     }
 
+    if(jugadaYaExistePorNumeros(editarNumerosTemp, indiceSeleccionado)){
+      errorEditar().textContent = "Números ya agregados";
+      avisarJugadaDuplicada();
+      return;
+    }
+
     j.nombre = nuevoNombre;
     j.numeros = ordenarNumeros(editarNumerosTemp);
     guardarJugadas();
@@ -2567,10 +2735,13 @@ function abrirDetalleJugada(indice){
     function cargarSelectUltimos(){
       // Usa la lista global 'jugadas' (ya cargada al iniciar y actualizada al guardar)
       selectJugadaUltimos.innerHTML = '<option value="">— Seleccionar —</option>';
-      (jugadas || []).forEach((j, idx) => {
+      ordenVisualJugadas().forEach((idx) => {
+        const j = jugadas[idx];
+        if(!j) return;
         const opt = document.createElement("option");
+        const favNro = numeroFavoritoPorIndice(idx);
         opt.value = String(idx);
-        opt.textContent = \`\${j.nombre || ("Jugada " + (idx+1))} (\${ordenarNumeros(j.numeros||[]).join("-")})\`;
+        opt.textContent = (j.nombre || ("Jugada " + (idx+1))) + (favNro ? " ⭐" + favNro : "") + " (" + ordenarNumeros(j.numeros||[]).join("-") + ")";
         selectJugadaUltimos.appendChild(opt);
       });
 
@@ -2810,7 +2981,11 @@ function abrirDetalleJugada(indice){
         title: "Agregar jugada",
         initial: [],
         onDone: (nums) => {
-          jugadas.push({ nombre: "Jugada " + (jugadas.length + 1), numeros: nums.map(fmt2), fecha: obtenerFechaHoy() });
+          if(jugadaYaExistePorNumeros(nums)){
+            avisarJugadaDuplicada();
+            return;
+          }
+          jugadas.push({ nombre: "Jugada " + (jugadas.length + 1), numeros: nums.map(fmt2), fecha: obtenerFechaHoy(), favoritoAt: null });
           guardarJugadas();
           renderizarJugadas();
         }
@@ -2933,7 +3108,13 @@ function abrirDetalleJugada(indice){
       }
       if(errorGanasteNombre) errorGanasteNombre.textContent = "";
 
-      jugadas.push({ nombre, numeros: ganasteNumsElegidos.map(fmt2) });
+      if(jugadaYaExistePorNumeros(ganasteNumsElegidos)){
+        if(errorGanasteNombre) errorGanasteNombre.textContent = "Números ya agregados";
+        avisarJugadaDuplicada();
+        return;
+      }
+
+      jugadas.push({ nombre, numeros: ganasteNumsElegidos.map(fmt2), fecha: obtenerFechaHoy(), favoritoAt: null });
       guardarJugadas();
       renderizarJugadas();
       // refrescar select de "Últimos sorteos" si está visible
@@ -3765,7 +3946,7 @@ body.dark{
           return "duplicate";
         }
 
-        const jugadaObj = { nombre: "Jugada " + ((arr || []).length + 1), numeros: normalized, fecha: obtenerFechaHoy() };
+        const jugadaObj = { nombre: "Jugada " + ((arr || []).length + 1), numeros: normalized, fecha: obtenerFechaHoy(), favoritoAt: null };
         (arr || []).push(jugadaObj);
         localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
 
@@ -3786,7 +3967,7 @@ body.dark{
       if(r === "ok"){
         setMsg("Guardada en Jugadas ✅", "ok");
       } else if(r === "duplicate"){
-        setMsg("Esta jugada ya fue agregada.", "bad");
+        setMsg("Números ya agregados", "bad");
       } else {
         setMsg("No se pudo guardar la jugada.", "bad");
       }
@@ -3977,6 +4158,11 @@ body.dark{
       return;
     }
 
+    if(d.type === "TOAST"){
+      showToast(d.message || "Listo");
+      return;
+    }
+
     if(d.type === "JUGADA_GUARDADA"){
       try{
         // refrescar Jugadas al instante
@@ -3987,7 +4173,7 @@ body.dark{
     }
 
     if(d.type === "JUGADA_DUPLICADA"){
-      showToast("Esta jugada ya fue agregada");
+      showToast("Números ya agregados");
       return;
     }
   });
@@ -4018,7 +4204,17 @@ btns.wa.addEventListener("click", ()=>setActive("wa"));
         const raw = localStorage.getItem(STORAGE_JUGADAS);
         const parsed = raw ? JSON.parse(raw) : [];
         const arr = Array.isArray(parsed) ? parsed : [];
-        arr.push({ nombre: "Jugada " + (arr.length+1), numeros: norm, fecha: obtenerFechaHoy() });
+        const keyNew = norm.slice().sort().join(",");
+        const exists = arr.some(function(it){
+          const numsIt = Array.isArray(it) ? it.map(function(n){ return String(parseInt(n,10)).padStart(2,"0"); }) : ((it && Array.isArray(it.numeros)) ? it.numeros.map(function(n){ return String(parseInt(n,10)).padStart(2,"0"); }) : []);
+          if(numsIt.length !== 6) return false;
+          return numsIt.slice().sort().join(",") === keyNew;
+        });
+        if(exists){
+          showToast("Números ya agregados");
+          return;
+        }
+        arr.push({ nombre: "Jugada " + (arr.length+1), numeros: norm, fecha: obtenerFechaHoy(), favoritoAt: null });
         localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
         showToast("Jugada guardada ✅");
         setActive("jugadas");
