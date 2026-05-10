@@ -24,6 +24,64 @@
   .nav button.active{color:var(--red);font-weight:700;}
   .toast{position:fixed;left:50%;bottom:calc(var(--navH) + 14px);transform:translateX(-50%);background:#000;color:#fff;padding:10px 12px;border-radius:12px;font-size:14px;display:none;z-index:10000;max-width:92%;text-align:center;}
   .toast.show{display:block;}
+
+  /* =========================================================
+     FIX VISUAL: SIN CUADRITO / RESALTADO CELESTE AL TOCAR
+     Mantiene la app limpia en celular, navegador y WebView.
+     No cambia funciones ni guardado de jugadas.
+     ========================================================= */
+  html, body, *{
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  button, a,
+  .btn-big, .btn-add, .btn-simple, .btn-share-mini,
+  .btn-danger-full, .btn-secondary-full, .btn-modal,
+  .share-tool-btn, .share-action-copy, .share-action-main,
+  .picker-close, .picker-btn-cancel, .num-btn,
+  .ball, .card, .section, .section-header, .section-body,
+  .jugada-item, .jugada-actions, .jugada-info,
+  .fav-btn, .estado-carita, .icon-btn, .btn-edit, .btn-delete,
+  .share-row, .share-check, .modal, .modal-overlay,
+  .nav button, .tabframe, .app, .app-header, .app-content{
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+  }
+
+  button:focus, button:active,
+  a:focus, a:active,
+  .btn-big:focus, .btn-big:active,
+  .btn-add:focus, .btn-add:active,
+  .btn-simple:focus, .btn-simple:active,
+  .btn-share-mini:focus, .btn-share-mini:active,
+  .btn-danger-full:focus, .btn-danger-full:active,
+  .btn-secondary-full:focus, .btn-secondary-full:active,
+  .share-tool-btn:focus, .share-tool-btn:active,
+  .share-action-copy:focus, .share-action-copy:active,
+  .share-action-main:focus, .share-action-main:active,
+  .picker-close:focus, .picker-close:active,
+  .picker-btn-cancel:focus, .picker-btn-cancel:active,
+  .num-btn:focus, .num-btn:active,
+  .jugada-item:focus, .jugada-item:active,
+  .share-row:focus, .share-row:active,
+  .share-check:focus, .share-check:active,
+  .fav-btn:focus, .fav-btn:active,
+  .btn-edit:focus, .btn-edit:active,
+  .btn-delete:focus, .btn-delete:active,
+  .icon-btn:focus, .icon-btn:active{
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  input, textarea, .share-preview{
+    -webkit-touch-callout: default !important;
+  }
+
 </style>
 </head>
 <body>
@@ -352,7 +410,65 @@
       margin-top:8px;
       line-height:1.35;
     }
-  </style>
+  
+  /* =========================================================
+     FIX VISUAL: SIN CUADRITO / RESALTADO CELESTE AL TOCAR
+     Mantiene la app limpia en celular, navegador y WebView.
+     No cambia funciones ni guardado de jugadas.
+     ========================================================= */
+  html, body, *{
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  button, a,
+  .btn-big, .btn-add, .btn-simple, .btn-share-mini,
+  .btn-danger-full, .btn-secondary-full, .btn-modal,
+  .share-tool-btn, .share-action-copy, .share-action-main,
+  .picker-close, .picker-btn-cancel, .num-btn,
+  .ball, .card, .section, .section-header, .section-body,
+  .jugada-item, .jugada-actions, .jugada-info,
+  .fav-btn, .estado-carita, .icon-btn, .btn-edit, .btn-delete,
+  .share-row, .share-check, .modal, .modal-overlay,
+  .nav button, .tabframe, .app, .app-header, .app-content{
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+  }
+
+  button:focus, button:active,
+  a:focus, a:active,
+  .btn-big:focus, .btn-big:active,
+  .btn-add:focus, .btn-add:active,
+  .btn-simple:focus, .btn-simple:active,
+  .btn-share-mini:focus, .btn-share-mini:active,
+  .btn-danger-full:focus, .btn-danger-full:active,
+  .btn-secondary-full:focus, .btn-secondary-full:active,
+  .share-tool-btn:focus, .share-tool-btn:active,
+  .share-action-copy:focus, .share-action-copy:active,
+  .share-action-main:focus, .share-action-main:active,
+  .picker-close:focus, .picker-close:active,
+  .picker-btn-cancel:focus, .picker-btn-cancel:active,
+  .num-btn:focus, .num-btn:active,
+  .jugada-item:focus, .jugada-item:active,
+  .share-row:focus, .share-row:active,
+  .share-check:focus, .share-check:active,
+  .fav-btn:focus, .fav-btn:active,
+  .btn-edit:focus, .btn-edit:active,
+  .btn-delete:focus, .btn-delete:active,
+  .icon-btn:focus, .icon-btn:active{
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  input, textarea, .share-preview{
+    -webkit-touch-callout: default !important;
+  }
+
+</style>
 </head>
 <body>
   <div class="app">
@@ -588,7 +704,35 @@
       window.scrollTo(0,0);
     }
 
-    (function iniciar(){
+
+    function bloquearSeleccionVisual(){
+      try{
+        document.addEventListener("selectstart", function(e){
+          const tag = (e.target && e.target.tagName ? e.target.tagName : "").toUpperCase();
+          if(tag !== "INPUT" && tag !== "TEXTAREA"){
+            e.preventDefault();
+          }
+        }, {passive:false});
+        document.addEventListener("dragstart", function(e){ e.preventDefault(); }, {passive:false});
+      }catch(e){}
+    }
+    bloquearSeleccionVisual();
+
+    
+    function bloquearSeleccionVisual(){
+      try{
+        document.addEventListener("selectstart", function(e){
+          const tag = (e.target && e.target.tagName ? e.target.tagName : "").toUpperCase();
+          if(tag !== "INPUT" && tag !== "TEXTAREA"){
+            e.preventDefault();
+          }
+        }, {passive:false});
+        document.addEventListener("dragstart", function(e){ e.preventDefault(); }, {passive:false});
+      }catch(e){}
+    }
+    bloquearSeleccionVisual();
+
+(function iniciar(){
       cargarTema();
       renderizarUltimoSorteo();
       renderizarDetalles();
@@ -986,7 +1130,7 @@
     .estado-carita{
       width:26px;
       height:26px;
-      font-size:20px;
+      font-size:18px;
       line-height:1;
       display:inline-flex;
       align-items:center;
@@ -1104,6 +1248,171 @@
     #input-nombre-editar{
       width:100%;padding:8px;border-radius:10px;border:1px solid #ccc;font-size:15px;text-align:center;
       background:#fff;color:#111;margin-top:8px;
+    }
+
+
+
+    /* ===== AJUSTE ESTILO BRINCO PARA MIS JUGADAS ===== */
+    .input{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid #ccc;
+      background:#fff;
+      color:#111;
+      text-align:center;
+      font-size:17px;
+      font-weight:900;
+    }
+    body.dark .input{
+      background:#111;
+      color:#fff;
+      border-color:#444;
+    }
+    .jugada-item{
+      display:block !important;
+      padding:10px 10px 9px !important;
+      border-radius:12px !important;
+      background:#fff;
+      border:1px solid #ddd;
+      box-shadow:0 2px 6px rgba(0,0,0,.08);
+      margin-bottom:10px !important;
+      cursor:pointer;
+    }
+    body.dark .jugada-item{
+      background:#202020;
+      border-color:#444;
+      box-shadow:0 2px 6px rgba(0,0,0,.9);
+    }
+    .jugada-info{
+      width:100%;
+      min-width:0;
+      display:block !important;
+    }
+    .jugada-titulo{
+      font-size:12px !important;
+      font-weight:950 !important;
+      line-height:1.15 !important;
+      margin-bottom:2px !important;
+      color:#111;
+    }
+    .jugada-numeros{
+      font-size:clamp(15px,4.6vw,18px) !important;
+      font-weight:950 !important;
+      letter-spacing:.45px !important;
+      line-height:1.12 !important;
+      white-space:nowrap !important;
+      overflow:hidden !important;
+      text-overflow:clip !important;
+      color:#111;
+    }
+    .jugada-nota{
+      font-size:12px;
+      font-weight:900;
+      color:#111;
+      line-height:1.15;
+      margin-top:3px;
+    }
+    .jugada-actions{
+      display:flex !important;
+      align-items:center !important;
+      justify-content:flex-end !important;
+      gap:8px !important;
+      margin-top:6px !important;
+      flex-wrap:nowrap !important;
+      width:100%;
+    }
+    .jugada-detalles-text{
+      font-size:13px !important;
+      font-weight:950 !important;
+      color:#111 !important;
+      line-height:1 !important;
+      margin-right:0 !important;
+      white-space:nowrap !important;
+      min-width:auto;
+    }
+    .estado-carita{
+      width:26px !important;
+      height:26px !important;
+      font-size:20px !important;
+      line-height:1 !important;
+      display:inline-flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      color:#111 !important;
+      font-weight:900 !important;
+      font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif !important;
+      flex:0 0 26px;
+    }
+    .fav-btn{
+      background:none !important;
+      border:none !important;
+      color:#111 !important;
+      font-size:18px !important;
+      font-weight:950 !important;
+      cursor:pointer !important;
+      padding:0 2px !important;
+      min-width:34px !important;
+      height:24px !important;
+      line-height:1 !important;
+      display:inline-flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      flex:0 0 34px;
+    }
+    .btn-edit,.btn-delete{
+      background:none !important;
+      border:none !important;
+      font-size:20px !important;
+      cursor:pointer !important;
+      margin-left:0 !important;
+      padding:0 2px !important;
+      min-width:28px;
+      height:28px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      line-height:1;
+      flex:0 0 30px;
+    }
+    .btn-edit{color:#1976d2 !important;}
+    .btn-delete{color:#c62828 !important;}
+    .jugada-ganadora .jugada-titulo,
+    .jugada-ganadora .jugada-numeros,
+    .jugada-ganadora .jugada-nota,
+    .jugada-ganadora .jugada-detalles-text,
+    .jugada-perdedora .jugada-titulo,
+    .jugada-perdedora .jugada-numeros,
+    .jugada-perdedora .jugada-nota,
+    .jugada-perdedora .jugada-detalles-text,
+    .jugada-pendiente .jugada-titulo,
+    .jugada-pendiente .jugada-numeros,
+    .jugada-pendiente .jugada-nota,
+    .jugada-pendiente .jugada-detalles-text,
+    body.dark .jugada-ganadora .jugada-titulo,
+    body.dark .jugada-ganadora .jugada-numeros,
+    body.dark .jugada-ganadora .jugada-nota,
+    body.dark .jugada-ganadora .jugada-detalles-text,
+    body.dark .jugada-perdedora .jugada-titulo,
+    body.dark .jugada-perdedora .jugada-numeros,
+    body.dark .jugada-perdedora .jugada-nota,
+    body.dark .jugada-perdedora .jugada-detalles-text,
+    body.dark .jugada-pendiente .jugada-titulo,
+    body.dark .jugada-pendiente .jugada-numeros,
+    body.dark .jugada-pendiente .jugada-nota,
+    body.dark .jugada-pendiente .jugada-detalles-text{
+      color:#111 !important;
+    }
+    body.dark .jugada-item:not(.jugada-ganadora):not(.jugada-perdedora):not(.jugada-pendiente) .jugada-titulo,
+    body.dark .jugada-item:not(.jugada-ganadora):not(.jugada-perdedora):not(.jugada-pendiente) .jugada-numeros{
+      color:#fff !important;
+    }
+    .modal .guardar-preview-ajustado{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:8px;
     }
 
     /* =====================================
@@ -1251,7 +1560,65 @@
 
     /* Pantallas */
     .oculta{display:none;}
-  </style>
+  
+  /* =========================================================
+     FIX VISUAL: SIN CUADRITO / RESALTADO CELESTE AL TOCAR
+     Mantiene la app limpia en celular, navegador y WebView.
+     No cambia funciones ni guardado de jugadas.
+     ========================================================= */
+  html, body, *{
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  button, a,
+  .btn-big, .btn-add, .btn-simple, .btn-share-mini,
+  .btn-danger-full, .btn-secondary-full, .btn-modal,
+  .share-tool-btn, .share-action-copy, .share-action-main,
+  .picker-close, .picker-btn-cancel, .num-btn,
+  .ball, .card, .section, .section-header, .section-body,
+  .jugada-item, .jugada-actions, .jugada-info,
+  .fav-btn, .estado-carita, .icon-btn, .btn-edit, .btn-delete,
+  .share-row, .share-check, .modal, .modal-overlay,
+  .nav button, .tabframe, .app, .app-header, .app-content{
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+  }
+
+  button:focus, button:active,
+  a:focus, a:active,
+  .btn-big:focus, .btn-big:active,
+  .btn-add:focus, .btn-add:active,
+  .btn-simple:focus, .btn-simple:active,
+  .btn-share-mini:focus, .btn-share-mini:active,
+  .btn-danger-full:focus, .btn-danger-full:active,
+  .btn-secondary-full:focus, .btn-secondary-full:active,
+  .share-tool-btn:focus, .share-tool-btn:active,
+  .share-action-copy:focus, .share-action-copy:active,
+  .share-action-main:focus, .share-action-main:active,
+  .picker-close:focus, .picker-close:active,
+  .picker-btn-cancel:focus, .picker-btn-cancel:active,
+  .num-btn:focus, .num-btn:active,
+  .jugada-item:focus, .jugada-item:active,
+  .share-row:focus, .share-row:active,
+  .share-check:focus, .share-check:active,
+  .fav-btn:focus, .fav-btn:active,
+  .btn-edit:focus, .btn-edit:active,
+  .btn-delete:focus, .btn-delete:active,
+  .icon-btn:focus, .icon-btn:active{
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  input, textarea, .share-preview{
+    -webkit-touch-callout: default !important;
+  }
+
+</style>
 </head>
 <body>
 <div class="app">
@@ -1405,6 +1772,22 @@
 
       <div class="picker-actions">
         <button class="picker-btn-cancel" id="picker-cancel">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL GUARDAR JUGADA (modelo Brinco) -->
+  <div class="modal-overlay" id="modal-guardar-jugada">
+    <div class="modal">
+      <div class="modal-title">Guardar jugada</div>
+      <div style="font-size:13px;margin-bottom:8px;color:var(--color-muted);font-weight:800;">Elegí un nombre para esta jugada.</div>
+      <input class="input" id="input-guardar-jugada" type="text" maxlength="35" placeholder="Nombre de la jugada" />
+      <div class="guardar-preview-ajustado" id="guardar-jugada-preview"></div>
+      <div class="error-msg" id="error-guardar-jugada"></div>
+      <div class="modal-buttons">
+        <button class="btn-modal btn-cancelar" id="btn-cancelar-guardar-jugada">Cancelar</button>
+        <button class="btn-modal btn-guardar" id="btn-confirmar-guardar-jugada">Guardar</button>
       </div>
     </div>
   </div>
@@ -1564,6 +1947,75 @@
     }
     function cerrarModalGanasteNombre(){
       closeModal(modalGanasteNombre);
+    }
+
+
+    // Modal genérico "Guardar jugada" (modelo Brinco) para Jugadas y Ruleta
+    const modalGuardarJugada = safeGet("modal-guardar-jugada");
+    const inputGuardarJugada = safeGet("input-guardar-jugada");
+    const errorGuardarJugada = safeGet("error-guardar-jugada");
+    const previewGuardarJugada = safeGet("guardar-jugada-preview");
+    const btnCancelarGuardarJugada = safeGet("btn-cancelar-guardar-jugada");
+    const btnConfirmarGuardarJugada = safeGet("btn-confirmar-guardar-jugada");
+    let numerosPendientesGuardar = [];
+
+    function renderPreviewGuardarJugada(){
+      if(!previewGuardarJugada) return;
+      previewGuardarJugada.innerHTML = "";
+      (numerosPendientesGuardar || []).forEach(function(n){
+        const b = document.createElement("div");
+        b.className = "ball";
+        b.textContent = fmt2(n);
+        previewGuardarJugada.appendChild(b);
+      });
+    }
+
+    function abrirModalGuardarJugada(nums){
+      numerosPendientesGuardar = ordenarNumeros((nums || []).map(fmt2)).slice(0,6);
+      if(!Array.isArray(numerosPendientesGuardar) || numerosPendientesGuardar.length !== 6) return;
+      if(jugadaYaExistePorNumeros(numerosPendientesGuardar)){
+        avisarJugadaDuplicada();
+        return;
+      }
+      if(errorGuardarJugada) errorGuardarJugada.textContent = "";
+      if(inputGuardarJugada){
+        inputGuardarJugada.value = "Jugada " + (jugadas.length + 1);
+        setTimeout(function(){ try{ inputGuardarJugada.focus(); inputGuardarJugada.select(); }catch(_e){} }, 80);
+      }
+      renderPreviewGuardarJugada();
+      openModal(modalGuardarJugada);
+    }
+
+    function cerrarModalGuardarJugada(){
+      closeModal(modalGuardarJugada);
+      numerosPendientesGuardar = [];
+      if(errorGuardarJugada) errorGuardarJugada.textContent = "";
+    }
+
+    function confirmarGuardarJugadaModal(){
+      const nums = numerosPendientesGuardar || [];
+      if(!Array.isArray(nums) || nums.length !== 6){
+        if(errorGuardarJugada) errorGuardarJugada.textContent = "Elegí 6 números para guardar.";
+        return;
+      }
+      if(new Set(nums.map(fmt2)).size !== 6){
+        if(errorGuardarJugada) errorGuardarJugada.textContent = "No repitas números en la misma jugada.";
+        return;
+      }
+      if(jugadaYaExistePorNumeros(nums)){
+        if(errorGuardarJugada) errorGuardarJugada.textContent = "Números ya agregados";
+        avisarJugadaDuplicada();
+        return;
+      }
+      let nombre = inputGuardarJugada ? String(inputGuardarJugada.value || "").trim() : "";
+      if(!nombre) nombre = "Jugada " + (jugadas.length + 1);
+
+      jugadas.push({ nombre:nombre, numeros: ordenarNumeros(nums), fecha: obtenerFechaHoy(), favoritoAt: null });
+      guardarJugadas();
+      renderizarJugadas();
+      cerrarModalGuardarJugada();
+      mostrarPantalla("pantalla-jugadas");
+      try{ window.parent && window.parent.postMessage({type:"JUGADA_GUARDADA"}, "*"); }catch(e){}
     }
 
     function toISOFromDDMMYYYY(fechaTexto){
@@ -1810,9 +2262,9 @@ const btnTema = () => safeGet("btn-tema");
   }
 
   function caritaResultadoJugada(estado){
-    if(estado && estado.ganadora) return "😊";
+    if(estado && estado.ganadora) return "🏆";
     if(estado && estado.consultaSiempreSale) return "🤔";
-    return "😢";
+    return "😔";
   }
 
 
@@ -2271,6 +2723,12 @@ const btnTema = () => safeGet("btn-tema");
     }
   }
 
+  function textoNotaResumenJugada(estado){
+    if(estado && estado.ganadora) return "Con premio en último sorteo";
+    if(estado && estado.consultaSiempreSale) return "Consultar en último sorteo";
+    return "Sin premio en último sorteo";
+  }
+
   function renderizarJugadas(){
     const lista = safeGet("lista-jugadas");
     lista.innerHTML = "";
@@ -2296,17 +2754,26 @@ const btnTema = () => safeGet("btn-tema");
 
       const titulo = document.createElement("div");
       titulo.className = "jugada-titulo";
-      titulo.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "") + (favNro ? " ⭐" + favNro : "");
+      titulo.textContent = (j.nombre || ("Jugada " + (i + 1))) + (j.fecha ? " (" + j.fecha + ")" : "");
 
       const numeros = document.createElement("div");
       numeros.className = "jugada-numeros";
       numeros.textContent = ordenarNumeros(j.numeros || []).join("-");
 
+      const nota = document.createElement("div");
+      nota.className = "jugada-nota";
+      nota.textContent = textoNotaResumenJugada(estado);
+
       info.appendChild(titulo);
       info.appendChild(numeros);
+      info.appendChild(nota);
 
       const contBtns = document.createElement("div");
       contBtns.className = "jugada-actions";
+
+      const detalles = document.createElement("div");
+      detalles.className = "jugada-detalles-text";
+      detalles.textContent = estado.consultaSiempreSale && !estado.ganadora ? "Chequear" : "Detalles";
 
       const carita = document.createElement("div");
       carita.className = "estado-carita";
@@ -2322,14 +2789,11 @@ const btnTema = () => safeGet("btn-tema");
         toggleFavoritoJugada(i);
       });
 
-      const detalles = document.createElement("div");
-      detalles.className = "jugada-detalles-text";
-      detalles.textContent = estado.consultaSiempreSale && !estado.ganadora ? "Chequear" : "Detalles";
-
       const btnEdit = document.createElement("button");
       btnEdit.className = "btn-edit";
       btnEdit.type = "button";
-      btnEdit.textContent = "✎";
+      btnEdit.textContent = "✏️";
+      btnEdit.setAttribute("aria-label", "Editar jugada");
       btnEdit.addEventListener("click", (e) => {
         e.stopPropagation();
         abrirModalEditar(i);
@@ -2338,15 +2802,17 @@ const btnTema = () => safeGet("btn-tema");
       const btnDel = document.createElement("button");
       btnDel.className = "btn-delete";
       btnDel.type = "button";
-      btnDel.textContent = "✕";
+      btnDel.textContent = "🗑️";
+      btnDel.setAttribute("aria-label", "Eliminar jugada");
       btnDel.addEventListener("click", (e) => {
         e.stopPropagation();
         preguntarEliminarJugada(i);
       });
 
+      // Orden copiado del Brinco: Detalles, carita, estrella, lápiz y eliminar.
+      contBtns.appendChild(detalles);
       contBtns.appendChild(carita);
       contBtns.appendChild(btnFav);
-      contBtns.appendChild(detalles);
       contBtns.appendChild(btnEdit);
       contBtns.appendChild(btnDel);
 
@@ -2981,16 +3447,16 @@ function abrirDetalleJugada(indice){
         title: "Agregar jugada",
         initial: [],
         onDone: (nums) => {
-          if(jugadaYaExistePorNumeros(nums)){
-            avisarJugadaDuplicada();
-            return;
-          }
-          jugadas.push({ nombre: "Jugada " + (jugadas.length + 1), numeros: nums.map(fmt2), fecha: obtenerFechaHoy(), favoritoAt: null });
-          guardarJugadas();
-          renderizarJugadas();
+          abrirModalGuardarJugada(nums);
         }
       });
     });
+
+    // Guardar jugada con nombre (modelo Brinco)
+    bindTap(btnCancelarGuardarJugada, () => { cerrarModalGuardarJugada(); });
+    bindTap(btnConfirmarGuardarJugada, () => { confirmarGuardarJugadaModal(); });
+    bindTap(modalGuardarJugada, (e) => { if(e && e.target === modalGuardarJugada) cerrarModalGuardarJugada(); });
+
 
     // ¿Ganaste alguna vez?
     safeGet("btn-ir-ganaste").addEventListener("click", () => {
@@ -3224,6 +3690,11 @@ function abrirDetalleJugada(indice){
         cargarJugadas();
         renderizarJugadas();
       }
+      if(d && d.type === "OPEN_SAVE_JUGADA"){
+        cargarJugadas();
+        renderizarJugadas();
+        abrirModalGuardarJugada(Array.isArray(d.numbers) ? d.numbers : []);
+      }
     }catch(e){}
   });
 
@@ -3241,190 +3712,158 @@ function abrirDetalleJugada(indice){
 frames.wa.srcdoc = `<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quini 6 – WhatsApp</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet" />
+<title>Quini 6 - WhatsApp</title>
 <style>
-:root{
-  --red:#e53935;
-  --bg:#f4f4f4;
-  --card:#ffffff;
-  --text:#222;
-  --shadow:0 6px 16px rgba(0,0,0,.08);
-}
+  :root{
+    --red:#f44336;
+    --bg:#f4f4f6;
+    --card:#ffffff;
+    --text:#333333;
+    --muted:#777777;
+    --shadow:0 6px 16px rgba(0,0,0,.12);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text)}
+  body.dark{--bg:#111111;--card:#1a1a1a;--text:#ffffff;--muted:#bbbbbb;--shadow:0 6px 16px rgba(0,0,0,.9)}
+  .phone{width:100%;max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
+  .header{background:var(--red);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:center;position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .header .inner{text-align:center}
+  .header .title{font-size:22px;font-weight:900;letter-spacing:.2px}
+  .header .sub{font-size:13px;opacity:.95;margin-top:3px;font-weight:700}
+  .btn-theme{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:4px}
+  .main{padding:10px 10px 80px;flex:1}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 14px 14px;margin-bottom:10px;color:var(--text)}
+  .title2{font-size:22px;font-weight:950;text-align:center;margin:0;color:var(--text)}
+  .small{font-size:13px;color:var(--muted);font-weight:800}
+  .center{text-align:center}
+  .info-box{background:rgba(244,67,54,.08);border-radius:12px;padding:10px 12px;font-weight:950;line-height:1.8;margin-top:10px}
+  body.dark .info-box{background:rgba(244,67,54,.16)}
+  .btn-add{width:100%;padding:14px 12px;border:none;border-radius:14px;font-weight:950;font-size:16px;cursor:pointer;box-shadow:var(--shadow);background:#000;color:#fff;text-decoration:none;display:block;text-align:center;margin-top:14px}
 
-/* Bloquear selección/copia de texto */
-*{
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
+  /* =========================================================
+     FIX VISUAL: SIN CUADRITO / RESALTADO CELESTE AL TOCAR
+     Mantiene la app limpia en celular, navegador y WebView.
+     No cambia funciones ni guardado de jugadas.
+     ========================================================= */
+  html, body, *{
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
 
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
+  button, a,
+  .btn-big, .btn-add, .btn-simple, .btn-share-mini,
+  .btn-danger-full, .btn-secondary-full, .btn-modal,
+  .share-tool-btn, .share-action-copy, .share-action-main,
+  .picker-close, .picker-btn-cancel, .num-btn,
+  .ball, .card, .section, .section-header, .section-body,
+  .jugada-item, .jugada-actions, .jugada-info,
+  .fav-btn, .estado-carita, .icon-btn, .btn-edit, .btn-delete,
+  .share-row, .share-check, .modal, .modal-overlay,
+  .nav button, .tabframe, .app, .app-header, .app-content{
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+  }
 
-.header{
-  background:var(--red);
-  color:#fff;
-  padding:18px 16px;
-  text-align:center;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);
-}
+  button:focus, button:active,
+  a:focus, a:active,
+  .btn-big:focus, .btn-big:active,
+  .btn-add:focus, .btn-add:active,
+  .btn-simple:focus, .btn-simple:active,
+  .btn-share-mini:focus, .btn-share-mini:active,
+  .btn-danger-full:focus, .btn-danger-full:active,
+  .btn-secondary-full:focus, .btn-secondary-full:active,
+  .share-tool-btn:focus, .share-tool-btn:active,
+  .share-action-copy:focus, .share-action-copy:active,
+  .share-action-main:focus, .share-action-main:active,
+  .picker-close:focus, .picker-close:active,
+  .picker-btn-cancel:focus, .picker-btn-cancel:active,
+  .num-btn:focus, .num-btn:active,
+  .jugada-item:focus, .jugada-item:active,
+  .share-row:focus, .share-row:active,
+  .share-check:focus, .share-check:active,
+  .fav-btn:focus, .fav-btn:active,
+  .btn-edit:focus, .btn-edit:active,
+  .btn-delete:focus, .btn-delete:active,
+  .icon-btn:focus, .icon-btn:active{
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
 
-.header h1{
-  margin:0;
-  font-size:26px;
-  font-weight:900;
-  letter-spacing:.2px;
-}
+  input, textarea, .share-preview{
+    -webkit-touch-callout: default !important;
+  }
 
-.header p{
-  margin:6px 0 0;
-  font-size:16px;
-  opacity:.95;
-}
-
-.container{
-  padding:16px;
-  max-width:760px;
-  margin:0 auto;
-}
-
-.card{
-  background:var(--card);
-  border-radius:18px;
-  padding:18px;
-  box-shadow:var(--shadow);
-}
-
-.card p{
-  font-size:18px;          /* letras más grandes */
-  line-height:1.65;
-  margin:0 0 14px;
-}
-
-.price{
-  background:#f1f1f1;
-  border:1px solid rgba(0,0,0,.10);
-  padding:12px 12px;
-  border-radius:12px;
-  font-weight:900;
-  font-size:18px;
-  margin:10px 0 14px;
-}
-
-.alert{
-  background:#fff8e1;
-  border-left:6px solid #fbc02d;
-  padding:14px;
-  border-radius:12px;
-  font-size:17px;
-  line-height:1.55;
-  margin-top:12px;
-}
-
-.btn-whatsapp{
-  display:block;
-  margin-top:18px;
-  background:#000;
-  color:#fff;
-  text-align:center;
-  padding:16px 14px;
-  font-size:18px;
-  font-weight:900;
-  border-radius:14px;
-  text-decoration:none;
-  box-shadow:0 12px 18px rgba(0,0,0,.14);
-}
-
-.btn-whatsapp:active{
-  transform:scale(.98);
-}
-
-.smallnote{
-  margin-top:12px;
-  font-size:16px;
-  opacity:.85;
-  line-height:1.55;
-}
-
-body.dark{
-  --bg:#111111;
-  --card:#1a1a1a;
-  --text:#ffffff;
-  --shadow:0 6px 16px rgba(0,0,0,.9);
-}
-body.dark .price{background:#202020;border-color:#444;color:#ffffff;}
-body.dark .alert{background:#2a2410;color:#ffffff;}
 </style>
 </head>
-
 <body>
+  <div class="phone">
+    <header class="header">
+      <div class="inner">
+        <div class="title">Quini 6</div>
+        <div class="sub">WhatsApp</div>
+      </div>
+      <button class="btn-theme" id="btn-tema" type="button" aria-label="Cambiar tema">🌙</button>
+    </header>
+    <main class="main">
+      <section class="card">
+        <h2 class="title2">Atención por WhatsApp</h2>
+        <div class="small center" style="margin-top:10px;line-height:1.6;text-align:left">
+          <p style="margin:0 0 10px;text-align:center">
+            ¡Hola! Consultanos para recibir más información sobre cómo realizar tu jugada vía WhatsApp.
+          </p>
 
-<div class="header">
-  <h1>Quini 6</h1>
-  <p>Contacto por WhatsApp</p>
-</div>
+          <div class="info-box">
+            Loto Plus<br>
+            Quini 6<br>
+            Telekino<br>
+            Brinco<br>
+            Loto 5 Plus
+          </div>
 
-<div class="container">
-  <div class="card">
+          <p style="margin:12px 0 0;text-align:center">
+            En Tómbola/Quiniela solo realizamos jugadas de las siguientes provincias:
+            <strong>Salteña, Jujeña, La Ciudad y Provincia de Buenos Aires</strong>.
+          </p>
+        </div>
 
-    <p>
-      Realizamos jugadas únicamente de <strong>Quini 6</strong> y <strong>Loto Plus</strong>.
-      Para comenzar, primero confirmamos la <strong>transferencia</strong> del usuario y, una vez acreditado el pago, procedemos a realizar la jugada.
-    </p>
-
-    <div class="price">
-      Quini 6: $3.000 — Loto Plus: $3.000
-    </div>
-
-    <p>
-      Las respuestas se realizan por <strong>orden de llegada</strong>. Si demoramos algunos minutos en contestar es porque estamos atendiendo otros mensajes.
-    </p>
-
-    <p>
-      Una vez hecha la jugada, enviamos la <strong>foto del comprobante</strong>. En caso de que el usuario tenga premio, el mismo será abonado por <strong>transferencia</strong>.
-    </p>
-
-    <div class="alert">
-      Para más seguridad, recomendamos enviar la jugada <strong>después de las 9:00 AM</strong> o, si se puede, <strong>un día antes</strong>.
-      No hay problema si la envían el mismo día del sorteo; pero como última opción, procurá enviarla con <strong>mínimo 2 horas de anticipación</strong> al horario del sorteo.
-      Si recibimos muchos mensajes cerca de la hora, puede que no lleguemos a realizarla.
-    </div>
-
-    <a class="btn-whatsapp"
-       href="https://wa.me/5493873538411?text=Hola%20quiero%20hacer%20una%20jugada%20me%20pueden%20pasar%20informacion"
-       target="_blank" rel="noopener">
-       Contactar por WhatsApp
-    </a>
-
-    <div class="smallnote">
-      Importante: Primero confirmamos la transferencia y luego realizamos la jugada.
-    </div>
-
+        <a class="btn-add"
+           href="whatsapp://send?text=Hola%2C%20me%20pueden%20pasar%20informaci%C3%B3n&phone=5493873538411">
+           Contactar por WhatsApp
+        </a>
+      </section>
+    </main>
   </div>
-</div>
 
 <script>
   const STORAGE_TEMA = "quini6_tema_global";
-  function aplicarTema(tema){ document.body.classList.toggle("dark", tema === "dark"); }
+  function aplicarTema(tema){
+    const btn = document.getElementById("btn-tema");
+    document.body.classList.toggle("dark", tema === "dark");
+    if(btn) btn.textContent = tema === "dark" ? "☀️" : "🌙";
+  }
   function cargarTema(){ try{ aplicarTema(localStorage.getItem(STORAGE_TEMA) || "light"); }catch(e){ aplicarTema("light"); } }
+  function toggleTema(){
+    if(window.parent && typeof window.parent.toggleTemaGlobalQuini === "function"){
+      window.parent.toggleTemaGlobalQuini();
+      return;
+    }
+    const nuevo = document.body.classList.contains("dark") ? "light" : "dark";
+    aplicarTema(nuevo);
+    try{ localStorage.setItem(STORAGE_TEMA, nuevo); }catch(e){}
+  }
+  document.getElementById("btn-tema").addEventListener("click", toggleTema);
   window.addEventListener("storage", function(e){ if(e.key === STORAGE_TEMA) cargarTema(); });
   cargarTema();
 <\/script>
-
-<script>
-  // Evita el menú de copiar/pegar por toque prolongado (Android/WebView)
-  document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, {passive:false});
-  document.addEventListener('selectstart', function(e){ e.preventDefault(); }, {passive:false});
-<\/script>
-
 </body>
 </html>
 `;
@@ -3471,8 +3910,8 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
     padding:8px 0 6px;
   }
   #wheel{
-    width:260px;
-    height:260px;
+    width:200px;
+    height:200px;
     border-radius:50%;
     background:
       conic-gradient(#f3f3f3 0 25deg,#e7e7e7 25deg 50deg,#f3f3f3 50deg 75deg,#e7e7e7 75deg 100deg,
@@ -3491,7 +3930,7 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
   }
   .hub{
     position:absolute;
-    width:72px;height:72px;border-radius:50%;
+    width:54px;height:54px;border-radius:50%;
     background:rgba(255,255,255,.65);
     left:50%;top:50%;transform:translate(-50%,-50%);
     box-shadow: inset 0 0 0 10px rgba(0,0,0,.06);
@@ -3499,7 +3938,7 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
   }
   .hub span{
     display:inline-block;
-    width:26px;height:26px;border-radius:50%;
+    width:20px;height:20px;border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #fff 0, #f4f4f4 40%, #dcdcdc 100%);
     box-shadow:0 3px 10px rgba(0,0,0,.2);
   }
@@ -3508,9 +3947,9 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
     top:2px; left:50%;
     transform:translateX(-50%);
     width:0;height:0;
-    border-left:14px solid transparent;
-    border-right:14px solid transparent;
-    border-bottom:22px solid #fff;
+    border-left:10px solid transparent;
+    border-right:10px solid transparent;
+    border-bottom:16px solid #fff;
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));
   }
   .spin{
@@ -3523,7 +3962,7 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
 
   h2{
     margin:10px 0 10px;
-    font-size:28px;
+    font-size:24px;
     font-weight:800;
     letter-spacing:.2px;
   }
@@ -3534,7 +3973,7 @@ body.dark .alert{background:#2a2410;color:#ffffff;}
     margin:4px 0 10px;
   }
   .ball{
-    width:56px;height:56px;border-radius:50%;
+    width:48px;height:48px;border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #fff 0, #f3f3f3 45%, #dcdcdc 100%);
     box-shadow:0 10px 18px rgba(0,0,0,.12);
     display:flex;align-items:center;justify-content:center;
@@ -3719,6 +4158,64 @@ body.dark{
   --muted:#bbbbbb;
   --shadow:0 10px 28px rgba(0,0,0,.9);
 }
+
+  /* =========================================================
+     FIX VISUAL: SIN CUADRITO / RESALTADO CELESTE AL TOCAR
+     Mantiene la app limpia en celular, navegador y WebView.
+     No cambia funciones ni guardado de jugadas.
+     ========================================================= */
+  html, body, *{
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  button, a,
+  .btn-big, .btn-add, .btn-simple, .btn-share-mini,
+  .btn-danger-full, .btn-secondary-full, .btn-modal,
+  .share-tool-btn, .share-action-copy, .share-action-main,
+  .picker-close, .picker-btn-cancel, .num-btn,
+  .ball, .card, .section, .section-header, .section-body,
+  .jugada-item, .jugada-actions, .jugada-info,
+  .fav-btn, .estado-carita, .icon-btn, .btn-edit, .btn-delete,
+  .share-row, .share-check, .modal, .modal-overlay,
+  .nav button, .tabframe, .app, .app-header, .app-content{
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+  }
+
+  button:focus, button:active,
+  a:focus, a:active,
+  .btn-big:focus, .btn-big:active,
+  .btn-add:focus, .btn-add:active,
+  .btn-simple:focus, .btn-simple:active,
+  .btn-share-mini:focus, .btn-share-mini:active,
+  .btn-danger-full:focus, .btn-danger-full:active,
+  .btn-secondary-full:focus, .btn-secondary-full:active,
+  .share-tool-btn:focus, .share-tool-btn:active,
+  .share-action-copy:focus, .share-action-copy:active,
+  .share-action-main:focus, .share-action-main:active,
+  .picker-close:focus, .picker-close:active,
+  .picker-btn-cancel:focus, .picker-btn-cancel:active,
+  .num-btn:focus, .num-btn:active,
+  .jugada-item:focus, .jugada-item:active,
+  .share-row:focus, .share-row:active,
+  .share-check:focus, .share-check:active,
+  .fav-btn:focus, .fav-btn:active,
+  .btn-edit:focus, .btn-edit:active,
+  .btn-delete:focus, .btn-delete:active,
+  .icon-btn:focus, .icon-btn:active{
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  input, textarea, .share-preview{
+    -webkit-touch-callout: default !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4199,35 +4696,15 @@ btns.wa.addEventListener("click", ()=>setActive("wa"));
         return;
       }
       const norm = nums.map(n => String(parseInt(n,10)).padStart(2,"0"));
-
-      try {
-        const raw = localStorage.getItem(STORAGE_JUGADAS);
-        const parsed = raw ? JSON.parse(raw) : [];
-        const arr = Array.isArray(parsed) ? parsed : [];
-        const keyNew = norm.slice().sort().join(",");
-        const exists = arr.some(function(it){
-          const numsIt = Array.isArray(it) ? it.map(function(n){ return String(parseInt(n,10)).padStart(2,"0"); }) : ((it && Array.isArray(it.numeros)) ? it.numeros.map(function(n){ return String(parseInt(n,10)).padStart(2,"0"); }) : []);
-          if(numsIt.length !== 6) return false;
-          return numsIt.slice().sort().join(",") === keyNew;
-        });
-        if(exists){
-          showToast("Números ya agregados");
-          return;
-        }
-        arr.push({ nombre: "Jugada " + (arr.length+1), numeros: norm, fecha: obtenerFechaHoy(), favoritoAt: null });
-        localStorage.setItem(STORAGE_JUGADAS, JSON.stringify(arr));
-        showToast("Jugada guardada ✅");
-        setActive("jugadas");
-        try {
-          if(frames.jugadas && frames.jugadas.contentWindow && typeof frames.jugadas.contentWindow.refreshJugadasFromParent === "function"){
-            frames.jugadas.contentWindow.refreshJugadasFromParent();
-          } else {
-            frames.jugadas.contentWindow.location.reload();
+      setActive("jugadas");
+      showToast("Elegí un nombre para guardar");
+      setTimeout(function(){
+        try{
+          if(frames.jugadas && frames.jugadas.contentWindow){
+            frames.jugadas.contentWindow.postMessage({type:"OPEN_SAVE_JUGADA", numbers:norm}, "*");
           }
-        } catch(e){}
-      } catch(e) {
-        showToast("No se pudo guardar la jugada.");
-      }
+        }catch(e){}
+      }, 180);
     }
   });
 
