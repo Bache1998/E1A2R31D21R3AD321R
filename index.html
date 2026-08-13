@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de almacenamiento - Quini 6</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f5f4;color:#1f2933}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+.head{background:#138a43;color:#fff;border-radius:18px;padding:20px;margin-bottom:14px}
+.head h1{margin:0 0 6px;font-size:23px}
+.head p{margin:0;font-size:14px;line-height:1.45;opacity:.95}
+.card{background:#fff;border:1px solid #dfe6e2;border-radius:16px;padding:16px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.btn{border:0;border-radius:11px;padding:11px 14px;background:#138a43;color:#fff;font-weight:700;cursor:pointer}
+.btn2{background:#222}
+.meta{font-size:13px;line-height:1.55;word-break:break-all}
+.meta b{color:#0b6831}
+.count{font-weight:700}
+.item{background:#fff;border:1px solid #dfe6e2;border-radius:14px;padding:14px;margin-bottom:10px}
+.item.quini{border:2px solid #138a43}
+.key{font-weight:800;font-size:15px;word-break:break-all;margin-bottom:8px}
+.value{background:#f7f8f8;border:1px solid #e4e8e6;border-radius:10px;padding:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
+.badge{display:inline-block;margin-left:6px;background:#138a43;color:#fff;border-radius:999px;padding:3px 8px;font-size:11px;vertical-align:middle}
+.empty{text-align:center;color:#6b7280;padding:22px 10px}
+.section-title{margin:18px 0 10px;font-size:18px}
+.warn{font-size:12px;color:#6b7280;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Diagnóstico de almacenamiento · Quini 6</h1>
+    <p>Visor de solo lectura para mostrar todo lo que esta página puede ver en localStorage, sessionStorage e IndexedDB.</p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="count" id="count">Analizando...</div>
+      <div>
+        <button class="btn" id="refresh">Actualizar</button>
+        <button class="btn btn2" id="copy">Copiar diagnóstico</button>
+      </div>
+    </div>
+    <div class="meta" style="margin-top:12px">
+      <div><b>Origen:</b> <span id="origin"></span></div>
+      <div><b>URL:</b> <span id="url"></span></div>
+      <div><b>Clave principal Quini 6:</b> quini6_mis_jugadas_v2</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">localStorage</h2>
+  <div id="local"></div>
+
+  <h2 class="section-title">sessionStorage</h2>
+  <div id="session"></div>
+
+  <h2 class="section-title">IndexedDB</h2>
+  <div id="idb"></div>
+
+  <div class="card warn">
+    Este código no utiliza localStorage.setItem(), removeItem(), clear(), IndexedDB deleteDatabase() ni ninguna operación de escritura.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const outLocal = document.getElementById("local");
+  const outSession = document.getElementById("session");
+  const outIdb = document.getElementById("idb");
+  const count = document.getElementById("count");
+
+  document.getElementById("origin").textContent = location.origin || "(sin origin)";
+  document.getElementById("url").textContent = location.href;
+
+  function safeText(v){ return v === null ? "null" : String(v); }
+
+  function pretty(v){
+    try{
+      const parsed = JSON.parse(v);
+      return JSON.stringify(parsed, null, 2);
+    }catch(e){
+      return safeText(v);
+    }
+  }
+
+  function itemBox(key, value, storageName){
+    const box = document.createElement("div");
+    box.className = "item" + (/quini|jugada/i.test(key) ? " quini" : "");
+
+    const k = document.createElement("div");
+    k.className = "key";
+    k.appendChild(document.createTextNode(key));
+
+    if(/quini|jugada/i.test(key)){
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = "posible dato útil";
+      k.appendChild(badge);
+    }
+
+    const v = document.createElement("div");
+    v.className = "value";
+    v.textContent = pretty(value);
+
+    box.appendChild(k);
+    box.appendChild(v);
+    box.dataset.storage = storageName;
+    box.dataset.key = key;
+    box.dataset.value = safeText(value);
+    return box;
+  }
+
+  function renderStorage(storage, container, name){
+    container.innerHTML = "";
+    const keys = [];
+    try{
+      for(let i=0;i<storage.length;i++){
+        const key = storage.key(i);
+        if(key !== null) keys.push(key);
+      }
+      keys.sort((a,b)=>a.localeCompare(b));
+
+      if(!keys.length){
+        container.innerHTML = '<div class="card empty">No se encontraron claves.</div>';
+        return 0;
+      }
+
+      keys.forEach(key=>{
+        container.appendChild(itemBox(key, storage.getItem(key), name));
+      });
+      return keys.length;
+    }catch(e){
+      container.innerHTML = '<div class="card empty">No se pudo leer este almacenamiento.</div>';
+      return 0;
+    }
+  }
+
+  async function renderIDB(){
+    outIdb.innerHTML = "";
+    if(!window.indexedDB){
+      outIdb.innerHTML = '<div class="card empty">IndexedDB no está disponible.</div>';
+      return 0;
+    }
+    if(typeof indexedDB.databases !== "function"){
+      outIdb.innerHTML = '<div class="card empty">Este WebView no permite enumerar las bases IndexedDB.</div>';
+      return 0;
+    }
+    try{
+      const dbs = await indexedDB.databases();
+      if(!dbs || !dbs.length){
+        outIdb.innerHTML = '<div class="card empty">No se encontraron bases IndexedDB.</div>';
+        return 0;
+      }
+      dbs.forEach(db=>{
+        const box = document.createElement("div");
+        box.className = "item";
+
+        const k = document.createElement("div");
+        k.className = "key";
+        k.textContent = db.name || "(sin nombre)";
+
+        const v = document.createElement("div");
+        v.className = "value";
+        v.textContent = "Versión: " + (db.version ?? "desconocida");
+
+        box.appendChild(k);
+        box.appendChild(v);
+        outIdb.appendChild(box);
+      });
+      return dbs.length;
+    }catch(e){
+      outIdb.innerHTML = '<div class="card empty">No se pudo enumerar IndexedDB.</div>';
+      return 0;
+    }
+  }
+
+  async function refresh(){
+    const a = renderStorage(localStorage, outLocal, "localStorage");
+    const b = renderStorage(sessionStorage, outSession, "sessionStorage");
+    const c = await renderIDB();
+    count.textContent = a + " claves localStorage · " + b + " sessionStorage · " + c + " bases IndexedDB";
+  }
+
+  function buildDiagnosticText(){
+    let txt = "DIAGNÓSTICO QUINI 6\n";
+    txt += "Origen: " + location.origin + "\n";
+    txt += "URL: " + location.href + "\n\n";
+
+    txt += "=== localStorage ===\n";
+    try{
+      const keys = [];
+      for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+      keys.sort();
+      keys.forEach(k=>{
+        txt += "\n[" + k + "]\n" + pretty(localStorage.getItem(k)) + "\n";
+      });
+    }catch(e){
+      txt += "ERROR\n";
+    }
+
+    txt += "\n=== sessionStorage ===\n";
+    try{
+      const keys = [];
+      for(let i=0;i<sessionStorage.length;i++) keys.push(sessionStorage.key(i));
+      keys.sort();
+      keys.forEach(k=>{
+        txt += "\n[" + k + "]\n" + pretty(sessionStorage.getItem(k)) + "\n";
+      });
+    }catch(e){
+      txt += "ERROR\n";
+    }
+
+    return txt;
+  }
+
+  document.getElementById("refresh").addEventListener("click", refresh);
+
+  document.getElementById("copy").addEventListener("click", async function(){
+    const txt = buildDiagnosticText();
+    try{
+      await navigator.clipboard.writeText(txt);
+    }catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand("copy"); }catch(_){}
+      ta.remove();
+    }
+    this.textContent = "Copiado ✓";
+    setTimeout(()=>this.textContent="Copiar diagnóstico",1500);
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>
