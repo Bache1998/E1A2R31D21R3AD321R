@@ -1,242 +1,490 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diagnóstico de almacenamiento - Quini 6</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f5f4;color:#1f2933}
-.wrap{max-width:860px;margin:0 auto;padding:16px}
-.head{background:#138a43;color:#fff;border-radius:18px;padding:20px;margin-bottom:14px}
-.head h1{margin:0 0 6px;font-size:23px}
-.head p{margin:0;font-size:14px;line-height:1.45;opacity:.95}
-.card{background:#fff;border:1px solid #dfe6e2;border-radius:16px;padding:16px;margin-bottom:12px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.btn{border:0;border-radius:11px;padding:11px 14px;background:#138a43;color:#fff;font-weight:700;cursor:pointer}
-.btn2{background:#222}
-.meta{font-size:13px;line-height:1.55;word-break:break-all}
-.meta b{color:#0b6831}
-.count{font-weight:700}
-.item{background:#fff;border:1px solid #dfe6e2;border-radius:14px;padding:14px;margin-bottom:10px}
-.item.quini{border:2px solid #138a43}
-.key{font-weight:800;font-size:15px;word-break:break-all;margin-bottom:8px}
-.value{background:#f7f8f8;border:1px solid #e4e8e6;border-radius:10px;padding:10px;font-family:Consolas,monospace;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
-.badge{display:inline-block;margin-left:6px;background:#138a43;color:#fff;border-radius:999px;padding:3px 8px;font-size:11px;vertical-align:middle}
-.empty{text-align:center;color:#6b7280;padding:22px 10px}
-.section-title{margin:18px 0 10px;font-size:18px}
-.warn{font-size:12px;color:#6b7280;line-height:1.5}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis jugadas guardadas - Quini 6</title>
+  <style>
+    :root{
+      --verde:#159447;
+      --verde2:#0d6f35;
+      --fondo:#f4f6f5;
+      --card:#ffffff;
+      --texto:#1f2933;
+      --muted:#6b7280;
+      --borde:#dde5e0;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Arial,Helvetica,sans-serif;
+      background:var(--fondo);
+      color:var(--texto);
+    }
+
+    .app{
+      width:100%;
+      max-width:720px;
+      margin:0 auto;
+      padding:16px;
+    }
+
+    .header{
+      background:linear-gradient(135deg,var(--verde),var(--verde2));
+      color:#fff;
+      border-radius:20px;
+      padding:22px 18px;
+      box-shadow:0 8px 24px rgba(0,0,0,.10);
+      margin-bottom:14px;
+    }
+
+    .header h1{
+      margin:0 0 6px;
+      font-size:24px;
+      line-height:1.15;
+    }
+
+    .header p{
+      margin:0;
+      font-size:14px;
+      opacity:.95;
+      line-height:1.4;
+    }
+
+    .barra{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:var(--card);
+      border:1px solid var(--borde);
+      border-radius:16px;
+      padding:13px 14px;
+      margin-bottom:14px;
+    }
+
+    .contador{
+      font-weight:800;
+      font-size:15px;
+    }
+
+    .acciones{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    button{
+      border:0;
+      border-radius:11px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:13px;
+    }
+
+    .btn-verde{
+      background:var(--verde);
+      color:#fff;
+    }
+
+    .btn-negro{
+      background:#222;
+      color:#fff;
+    }
+
+    .lista{
+      display:grid;
+      gap:12px;
+    }
+
+    .jugada{
+      background:var(--card);
+      border:1px solid var(--borde);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 3px 12px rgba(0,0,0,.045);
+    }
+
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .nombre{
+      font-size:18px;
+      font-weight:900;
+      word-break:break-word;
+    }
+
+    .fecha{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      padding-top:2px;
+    }
+
+    .numeros{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:13px;
+    }
+
+    .bola{
+      width:43px;
+      height:43px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--verde);
+      color:white;
+      font-size:16px;
+      font-weight:900;
+      box-shadow:inset 0 -2px 0 rgba(0,0,0,.10);
+    }
+
+    .copiar-jugada{
+      width:100%;
+      background:#eef5f1;
+      color:var(--verde2);
+      border:1px solid #d8e9df;
+    }
+
+    .estado{
+      background:var(--card);
+      border:1px solid var(--borde);
+      border-radius:18px;
+      padding:25px 18px;
+      text-align:center;
+    }
+
+    .estado strong{
+      display:block;
+      font-size:17px;
+      margin-bottom:6px;
+    }
+
+    .estado span{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .pie{
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      padding:15px 8px 5px;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:22px;
+      transform:translateX(-50%);
+      background:#1f2933;
+      color:#fff;
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:700;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+      z-index:1000;
+      max-width:90%;
+      text-align:center;
+    }
+
+    .toast.show{opacity:1}
+
+    @media (max-width:470px){
+      .barra{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+      .acciones{
+        width:100%;
+      }
+      .acciones button{
+        flex:1;
+      }
+      .bola{
+        width:40px;
+        height:40px;
+        font-size:15px;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="head">
-    <h1>Diagnóstico de almacenamiento · Quini 6</h1>
-    <p>Visor de solo lectura para mostrar todo lo que esta página puede ver en localStorage, sessionStorage e IndexedDB.</p>
-  </div>
+  <main class="app">
 
-  <div class="card">
-    <div class="row">
-      <div class="count" id="count">Analizando...</div>
-      <div>
-        <button class="btn" id="refresh">Actualizar</button>
-        <button class="btn btn2" id="copy">Copiar diagnóstico</button>
+    <section class="header">
+      <h1>Mis jugadas guardadas</h1>
+      <p>Quini 6 · Respaldo y visualización de tus combinaciones guardadas</p>
+    </section>
+
+    <section class="barra">
+      <div class="contador" id="contador">Buscando jugadas...</div>
+      <div class="acciones">
+        <button class="btn-verde" id="actualizar" type="button">Actualizar</button>
+        <button class="btn-negro" id="copiar-todas" type="button">Copiar todas</button>
       </div>
+    </section>
+
+    <section class="lista" id="lista"></section>
+
+    <div class="pie">
+      Visor de solo lectura. Este código no agrega, modifica ni elimina jugadas.
     </div>
-    <div class="meta" style="margin-top:12px">
-      <div><b>Origen:</b> <span id="origin"></span></div>
-      <div><b>URL:</b> <span id="url"></span></div>
-      <div><b>Clave principal Quini 6:</b> quini6_mis_jugadas_v2</div>
-    </div>
-  </div>
+  </main>
 
-  <h2 class="section-title">localStorage</h2>
-  <div id="local"></div>
+  <div class="toast" id="toast"></div>
 
-  <h2 class="section-title">sessionStorage</h2>
-  <div id="session"></div>
+  <script>
+    (function(){
+      "use strict";
 
-  <h2 class="section-title">IndexedDB</h2>
-  <div id="idb"></div>
+      const STORAGE_JUGADAS = "quini6_mis_jugadas_v2";
 
-  <div class="card warn">
-    Este código no utiliza localStorage.setItem(), removeItem(), clear(), IndexedDB deleteDatabase() ni ninguna operación de escritura.
-  </div>
-</div>
+      const lista = document.getElementById("lista");
+      const contador = document.getElementById("contador");
+      const btnActualizar = document.getElementById("actualizar");
+      const btnCopiarTodas = document.getElementById("copiar-todas");
+      const toast = document.getElementById("toast");
 
-<script>
-(function(){
-  "use strict";
+      let jugadasActuales = [];
 
-  const outLocal = document.getElementById("local");
-  const outSession = document.getElementById("session");
-  const outIdb = document.getElementById("idb");
-  const count = document.getElementById("count");
-
-  document.getElementById("origin").textContent = location.origin || "(sin origin)";
-  document.getElementById("url").textContent = location.href;
-
-  function safeText(v){ return v === null ? "null" : String(v); }
-
-  function pretty(v){
-    try{
-      const parsed = JSON.parse(v);
-      return JSON.stringify(parsed, null, 2);
-    }catch(e){
-      return safeText(v);
-    }
-  }
-
-  function itemBox(key, value, storageName){
-    const box = document.createElement("div");
-    box.className = "item" + (/quini|jugada/i.test(key) ? " quini" : "");
-
-    const k = document.createElement("div");
-    k.className = "key";
-    k.appendChild(document.createTextNode(key));
-
-    if(/quini|jugada/i.test(key)){
-      const badge = document.createElement("span");
-      badge.className = "badge";
-      badge.textContent = "posible dato útil";
-      k.appendChild(badge);
-    }
-
-    const v = document.createElement("div");
-    v.className = "value";
-    v.textContent = pretty(value);
-
-    box.appendChild(k);
-    box.appendChild(v);
-    box.dataset.storage = storageName;
-    box.dataset.key = key;
-    box.dataset.value = safeText(value);
-    return box;
-  }
-
-  function renderStorage(storage, container, name){
-    container.innerHTML = "";
-    const keys = [];
-    try{
-      for(let i=0;i<storage.length;i++){
-        const key = storage.key(i);
-        if(key !== null) keys.push(key);
-      }
-      keys.sort((a,b)=>a.localeCompare(b));
-
-      if(!keys.length){
-        container.innerHTML = '<div class="card empty">No se encontraron claves.</div>';
-        return 0;
+      function fmt2(valor){
+        const n = parseInt(valor,10);
+        if(Number.isNaN(n)) return String(valor);
+        return String(n).padStart(2,"0");
       }
 
-      keys.forEach(key=>{
-        container.appendChild(itemBox(key, storage.getItem(key), name));
-      });
-      return keys.length;
-    }catch(e){
-      container.innerHTML = '<div class="card empty">No se pudo leer este almacenamiento.</div>';
-      return 0;
-    }
-  }
-
-  async function renderIDB(){
-    outIdb.innerHTML = "";
-    if(!window.indexedDB){
-      outIdb.innerHTML = '<div class="card empty">IndexedDB no está disponible.</div>';
-      return 0;
-    }
-    if(typeof indexedDB.databases !== "function"){
-      outIdb.innerHTML = '<div class="card empty">Este WebView no permite enumerar las bases IndexedDB.</div>';
-      return 0;
-    }
-    try{
-      const dbs = await indexedDB.databases();
-      if(!dbs || !dbs.length){
-        outIdb.innerHTML = '<div class="card empty">No se encontraron bases IndexedDB.</div>';
-        return 0;
+      function ordenarNumeros(nums){
+        return nums
+          .map(fmt2)
+          .sort((a,b)=>parseInt(a,10)-parseInt(b,10));
       }
-      dbs.forEach(db=>{
-        const box = document.createElement("div");
-        box.className = "item";
 
-        const k = document.createElement("div");
-        k.className = "key";
-        k.textContent = db.name || "(sin nombre)";
+      function normalizar(item, indice){
+        if(Array.isArray(item)){
+          return {
+            nombre:"Jugada " + (indice + 1),
+            numeros:ordenarNumeros(item),
+            fecha:""
+          };
+        }
 
-        const v = document.createElement("div");
-        v.className = "value";
-        v.textContent = "Versión: " + (db.version ?? "desconocida");
+        if(item && typeof item === "object" && Array.isArray(item.numeros)){
+          return {
+            nombre:item.nombre || ("Jugada " + (indice + 1)),
+            numeros:ordenarNumeros(item.numeros),
+            fecha:item.fecha || ""
+          };
+        }
 
-        box.appendChild(k);
-        box.appendChild(v);
-        outIdb.appendChild(box);
+        return null;
+      }
+
+      function mostrarToast(texto){
+        toast.textContent = texto;
+        toast.classList.add("show");
+        clearTimeout(mostrarToast._t);
+        mostrarToast._t = setTimeout(()=>{
+          toast.classList.remove("show");
+        },1600);
+      }
+
+      async function copiarTexto(texto){
+        try{
+          await navigator.clipboard.writeText(texto);
+          return true;
+        }catch(e){
+          try{
+            const ta = document.createElement("textarea");
+            ta.value = texto;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            const ok = document.execCommand("copy");
+            ta.remove();
+            return ok;
+          }catch(_){
+            return false;
+          }
+        }
+      }
+
+      function textoJugada(j){
+        let t = (j.nombre || "Jugada") + "\n";
+        t += j.numeros.join(" - ");
+        if(j.fecha) t += "\nFecha: " + j.fecha;
+        return t;
+      }
+
+      function crearTarjeta(jugada){
+        const card = document.createElement("article");
+        card.className = "jugada";
+
+        const top = document.createElement("div");
+        top.className = "top";
+
+        const nombre = document.createElement("div");
+        nombre.className = "nombre";
+        nombre.textContent = jugada.nombre;
+
+        top.appendChild(nombre);
+
+        if(jugada.fecha){
+          const fecha = document.createElement("div");
+          fecha.className = "fecha";
+          fecha.textContent = jugada.fecha;
+          top.appendChild(fecha);
+        }
+
+        const numeros = document.createElement("div");
+        numeros.className = "numeros";
+
+        jugada.numeros.forEach(n=>{
+          const bola = document.createElement("div");
+          bola.className = "bola";
+          bola.textContent = fmt2(n);
+          numeros.appendChild(bola);
+        });
+
+        const copiar = document.createElement("button");
+        copiar.type = "button";
+        copiar.className = "copiar-jugada";
+        copiar.textContent = "Copiar esta jugada";
+        copiar.addEventListener("click", async ()=>{
+          const ok = await copiarTexto(textoJugada(jugada));
+          mostrarToast(ok ? "Jugada copiada ✓" : "No se pudo copiar");
+        });
+
+        card.appendChild(top);
+        card.appendChild(numeros);
+        card.appendChild(copiar);
+
+        return card;
+      }
+
+      function mostrarVacio(){
+        jugadasActuales = [];
+        lista.innerHTML = "";
+        contador.textContent = "0 jugadas guardadas";
+
+        const estado = document.createElement("div");
+        estado.className = "estado";
+
+        const titulo = document.createElement("strong");
+        titulo.textContent = "No hay jugadas guardadas";
+
+        const texto = document.createElement("span");
+        texto.textContent = "No se encontraron combinaciones en este almacenamiento.";
+
+        estado.appendChild(titulo);
+        estado.appendChild(texto);
+        lista.appendChild(estado);
+      }
+
+      function mostrarError(){
+        jugadasActuales = [];
+        lista.innerHTML = "";
+        contador.textContent = "Sin acceso";
+
+        const estado = document.createElement("div");
+        estado.className = "estado";
+
+        const titulo = document.createElement("strong");
+        titulo.textContent = "No se pudo leer el almacenamiento";
+
+        const texto = document.createElement("span");
+        texto.textContent = "Esta página no puede acceder a las jugadas guardadas en este origen.";
+
+        estado.appendChild(titulo);
+        estado.appendChild(texto);
+        lista.appendChild(estado);
+      }
+
+      function cargar(){
+        try{
+          const raw = localStorage.getItem(STORAGE_JUGADAS);
+
+          if(!raw){
+            mostrarVacio();
+            return;
+          }
+
+          const parsed = JSON.parse(raw);
+
+          if(!Array.isArray(parsed)){
+            mostrarVacio();
+            return;
+          }
+
+          jugadasActuales = parsed
+            .map(normalizar)
+            .filter(j=>j && Array.isArray(j.numeros) && j.numeros.length);
+
+          if(!jugadasActuales.length){
+            mostrarVacio();
+            return;
+          }
+
+          lista.innerHTML = "";
+
+          jugadasActuales.forEach(j=>{
+            lista.appendChild(crearTarjeta(j));
+          });
+
+          contador.textContent =
+            jugadasActuales.length === 1
+              ? "1 jugada guardada"
+              : jugadasActuales.length + " jugadas guardadas";
+
+        }catch(e){
+          console.error(e);
+          mostrarError();
+        }
+      }
+
+      btnActualizar.addEventListener("click", ()=>{
+        cargar();
+        mostrarToast("Actualizado");
       });
-      return dbs.length;
-    }catch(e){
-      outIdb.innerHTML = '<div class="card empty">No se pudo enumerar IndexedDB.</div>';
-      return 0;
-    }
-  }
 
-  async function refresh(){
-    const a = renderStorage(localStorage, outLocal, "localStorage");
-    const b = renderStorage(sessionStorage, outSession, "sessionStorage");
-    const c = await renderIDB();
-    count.textContent = a + " claves localStorage · " + b + " sessionStorage · " + c + " bases IndexedDB";
-  }
+      btnCopiarTodas.addEventListener("click", async ()=>{
+        if(!jugadasActuales.length){
+          mostrarToast("No hay jugadas para copiar");
+          return;
+        }
 
-  function buildDiagnosticText(){
-    let txt = "DIAGNÓSTICO QUINI 6\n";
-    txt += "Origen: " + location.origin + "\n";
-    txt += "URL: " + location.href + "\n\n";
+        const texto =
+          "QUINI 6 - MIS JUGADAS GUARDADAS\n\n" +
+          jugadasActuales.map(textoJugada).join("\n\n");
 
-    txt += "=== localStorage ===\n";
-    try{
-      const keys = [];
-      for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
-      keys.sort();
-      keys.forEach(k=>{
-        txt += "\n[" + k + "]\n" + pretty(localStorage.getItem(k)) + "\n";
+        const ok = await copiarTexto(texto);
+        mostrarToast(ok ? "Todas las jugadas copiadas ✓" : "No se pudo copiar");
       });
-    }catch(e){
-      txt += "ERROR\n";
-    }
 
-    txt += "\n=== sessionStorage ===\n";
-    try{
-      const keys = [];
-      for(let i=0;i<sessionStorage.length;i++) keys.push(sessionStorage.key(i));
-      keys.sort();
-      keys.forEach(k=>{
-        txt += "\n[" + k + "]\n" + pretty(sessionStorage.getItem(k)) + "\n";
-      });
-    }catch(e){
-      txt += "ERROR\n";
-    }
-
-    return txt;
-  }
-
-  document.getElementById("refresh").addEventListener("click", refresh);
-
-  document.getElementById("copy").addEventListener("click", async function(){
-    const txt = buildDiagnosticText();
-    try{
-      await navigator.clipboard.writeText(txt);
-    }catch(e){
-      const ta = document.createElement("textarea");
-      ta.value = txt;
-      document.body.appendChild(ta);
-      ta.select();
-      try{ document.execCommand("copy"); }catch(_){}
-      ta.remove();
-    }
-    this.textContent = "Copiado ✓";
-    setTimeout(()=>this.textContent="Copiar diagnóstico",1500);
-  });
-
-  refresh();
-})();
-</script>
+      // SOLO LECTURA:
+      // No usa localStorage.setItem(), removeItem() ni clear().
+      cargar();
+    })();
+  </script>
 </body>
 </html>
